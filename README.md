@@ -331,10 +331,6 @@ ai-ids-zero-day-detection/
 ├── dashboard.py     ← Live Rich terminal dashboard
 ├── report.py        ← Post-session report generator
 ├── requirements.txt ← pip install -r requirements.txt
-│
-└── logs/            ← Auto-created on first run
-    ├── alerts.json
-    └── session_report.txt
 ```
 
 ---
