@@ -8,8 +8,6 @@
 ![Rich](https://img.shields.io/badge/Rich-Terminal_UI-00d4ff?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge)
 
-**Final Year Project**
-**Guided by: Dr. Saneh Lata Yadav**
 
 *A fully working, local Python-based Intrusion Detection System with a live
 terminal dashboard, ML anomaly detection, LLM-powered threat analysis,
