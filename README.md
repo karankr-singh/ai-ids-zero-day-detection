@@ -81,7 +81,8 @@ required.
 
 > Screenshot of the actual running dashboard
 
-![AI-IDS Dashboard](dashboard_screenshot.png)
+<img width="996" height="293" alt="Screenshot 2026-03-26 160502" src="https://github.com/user-attachments/assets/048c3640-1aad-4bd6-86d9-c6148e4c600c" />
+
 
 ---
 
@@ -151,8 +152,6 @@ Network Traffic (Simulated)
 ---
 
 ## ⚙️ How It Works
-
-<img width="996" height="293" alt="Screenshot 2026-03-26 160502" src="https://github.com/user-attachments/assets/a000b6e5-4a52-4dce-929f-81b47766dff6" />
 
 ### Stage 1 — Traffic Generation
 The `AttackSimulator` generates realistic network packets — both normal traffic
