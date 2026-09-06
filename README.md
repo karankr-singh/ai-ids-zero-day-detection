@@ -1,371 +1,344 @@
-# 🛡️ AI-IDS: AI-Driven Intrusion Detection System
-### Live Terminal Dashboard | Real-Time Detection | Zero-Day Capable
+# 🛡️ AI-IDS — AI-Driven Intrusion Detection System
 
-<div align="center">
+> A local Python IDS prototype combining **unsupervised anomaly detection**, **LLM-assisted threat analysis**, attack simulation, and a live terminal dashboard.
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.4.0-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
-![Rich](https://img.shields.io/badge/Rich-Terminal_UI-00d4ff?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Scikit-learn](https://img.shields.io/badge/Scikit--learn-Isolation%20Forest-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
+[![Rich](https://img.shields.io/badge/UI-Rich-111827?style=for-the-badge)](https://rich.readthedocs.io/)
+[![Status](https://img.shields.io/badge/Status-Active%20Development-brightgreen?style=for-the-badge)](#status)
 
-
-*A fully working, local Python-based Intrusion Detection System with a live
-terminal dashboard, ML anomaly detection, LLM-powered threat analysis,
-and automated attack simulation — no browser or server required.*
-
-</div>
+AI-IDS is designed as a **working cybersecurity/ML prototype** rather than a production network sensor. It generates synthetic traffic and attack scenarios, extracts behavioral features, scores anomalies with Isolation Forest, enriches alerts with an optional local LLM, and presents the results through a Rich-based terminal interface.
 
 ---
 
-## 📌 Table of Contents
+## Why this project?
 
-- [About](#-about)
-- [Live Demo](#-live-demo)
-- [Features](#-features)
-- [System Architecture](#-system-architecture)
-- [How It Works](#-how-it-works)
-- [Attack Types Detected](#-attack-types-detected)
-- [Detection Results](#-detection-results)
-- [Technology Stack](#-technology-stack)
-- [Installation](#-installation)
-- [Usage](#-usage)
-- [Project Structure](#-project-structure)
-- [Future Scope](#-future-scope)
-- [Related Project](#-related-project)
-- [Contributors](#-contributors)
+Signature-based IDS approaches are effective for known patterns, but previously unseen behavior can be harder to detect. This project explores a complementary approach:
 
----
-
-## 🔍 About
-
-**AI-IDS** is a fully functional, locally-running Intrusion Detection System
-that combines **Isolation Forest** machine learning with **LLM-based reasoning**
-to detect zero-day cyber attacks in real time — without relying on any predefined
-attack signatures.
-
-Unlike traditional IDS tools that only detect known threats, AI-IDS learns what
-**normal** network traffic looks like and flags anything that deviates — making
-it capable of catching entirely new, never-seen-before attack patterns.
-
-The system runs entirely from the terminal with a live, full-screen dashboard
-built using the `rich` library. No browser, no server, no internet connection
-required.
-
-> **One-line summary:** Run `python main.py` and get a live cybersecurity
-> operations center on your terminal — detecting, classifying, and responding
-> to threats in real time.
-
----
-
-## 🎬 Live Demo
-
-```
-┌─ Header: Packets │ Alerts │ Accuracy │ FPR │ Status: ● MONITORING ──┐
-├─ Live Alert Feed ──────────────┬─ Traffic Sparklines ───────────────┤
-│  ● CRITICAL  Port Scan         │  Normal  ▁▂▃▄▅▆▇█▄▂               │
-│  ● HIGH      DDoS Flood        │  Anomaly ▁▁▁█▁▁▁█▁▁               │
-│  ● MEDIUM    Data Exfiltration ├─ Severity Distribution ────────────┤
-│  ● LOW       Brute Force       │  CRITICAL ████████ 8               │
-│  ...                           │  HIGH     █████    5               │
-│                                │  MEDIUM   ███      3               │
-│                                ├─ Protocol Breakdown ───────────────┤
-│                                │  HTTPS  ██████████ 42              │
-│                                │  HTTP   ████       18              │
-├─ Response Actions ─────────────┴─ System Terminal ────────────────┤
-│  CRITICAL  Port Scan from 45.33.32.1 — BLOCK IP + ISOLATE         │
-│  HIGH      DDoS Flood from 192.0.2.5 — BLOCK IP + FIREWALL        │
-│  [21:48:53] Isolation Forest model loaded (150 estimators)         │
-│  [21:48:53] Attack simulator ready — 6 attack profiles             │
-└────────────────────────────────────────────────────────────────────┘
+```text
+Synthetic network traffic
+        ↓
+Feature extraction
+        ↓
+Isolation Forest
+        ↓
+Anomaly score
+        ↓
+Severity classification
+        ↓
+LLM / rule-based analysis
+        ↓
+Alert + dashboard + report
 ```
 
-> Screenshot of the actual running dashboard
-
-<img width="996" height="293" alt="Screenshot 2026-03-26 160502" src="https://github.com/user-attachments/assets/048c3640-1aad-4bd6-86d9-c6148e4c600c" />
-
+The important distinction is that **“zero-day capable” here means anomaly-based detection can flag previously unseen patterns**. It does not mean the system can guarantee detection of every real-world zero-day attack.
 
 ---
 
-## ✨ Features
+## ✨ Key Features
 
-| Feature | Description |
+| Capability | Implementation |
 |---|---|
-| 🔍 **Real-Time Detection** | Analyzes network packets continuously as they arrive |
-| 🤖 **Isolation Forest ML** | Unsupervised anomaly detection — no labeled data needed |
-| 🧠 **LLM Reasoning** | Natural language threat analysis via Ollama / expert fallback |
-| ⚡ **Attack Simulation** | 6 built-in attack profiles for testing and demonstration |
-| 📊 **Live Dashboard** | Full-screen terminal UI with charts, alerts, and logs |
-| 🛡️ **Auto Response** | Tiered automated responses based on threat severity |
-| 🔄 **Model Retraining** | Online learning from accumulated traffic data |
-| 💾 **Alert Persistence** | All alerts saved to `logs/alerts.json` |
-| 📄 **Session Report** | Auto-generated report on exit |
-| 🎯 **Zero-Day Capable** | Detects unknown attacks with no signature required |
+| 🔍 Anomaly detection | Isolation Forest trained without attack labels |
+| 🧪 Attack simulation | Six synthetic attack profiles |
+| 🧠 Threat analysis | Optional Ollama/LLM reasoning with local rule-based fallback |
+| 📊 Live monitoring | Full-screen Rich terminal dashboard |
+| 📈 Feature engineering | 10-dimensional packet/flow feature representation |
+| 📝 Alert persistence | JSON/JSONL-style alert logs |
+| 📄 Session reporting | Summary generated when monitoring ends |
+| 🔄 Model updates | Retraining support using accumulated traffic data |
 
 ---
 
-## 🏗️ System Architecture
+## 🎬 Live Dashboard
 
+The project includes a terminal-based monitoring interface showing packet counts, alerts, anomaly information, severity distribution, protocol activity, and system status.
+
+<img width="996" height="293" alt="AI-IDS live terminal dashboard" src="https://github.com/user-attachments/assets/048c3640-1aad-4bd6-86d9-c6148e4c600c" />
+
+---
+
+## 🏗️ Architecture
+
+```text
+┌──────────────────────────┐
+│     Attack Simulator     │
+│ normal + attack traffic  │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│    Feature Extraction    │
+│ packet / flow features   │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│    Isolation Forest      │
+│ anomaly score + decision │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│  Severity Classification │
+│ LOW / MEDIUM / HIGH /    │
+│ CRITICAL                 │
+└────────────┬─────────────┘
+             │
+       ┌─────┴─────┐
+       ▼           ▼
+┌─────────────┐ ┌────────────────┐
+│ LLM / Rules │ │ Alert + Logger │
+│ explanation │ │ + persistence  │
+└──────┬──────┘ └───────┬────────┘
+       └───────┬────────┘
+               ▼
+       ┌────────────────┐
+       │ Rich Dashboard │
+       │ + Session Report│
+       └────────────────┘
 ```
-Network Traffic (Simulated)
-           │
-           ▼
-┌──────────────────────┐
-│   Attack Simulator   │  ← Generates realistic normal + attack packets
-│   simulator.py       │    6 attack profiles, ~8% anomaly rate
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────────────────────────┐
-│         Anomaly Detection Engine         │
-│              detector.py                 │
-│                                          │
-│  Raw Packet → Feature Extraction (10D)   │
-│            → StandardScaler              │
-│            → Isolation Forest            │
-│            → Anomaly Score               │
-│            → Severity Classification     │
-│              CRITICAL / HIGH / MEDIUM / LOW│
-└──────────┬───────────────────────────────┘
-           │
-           ▼
-┌──────────────────────┐
-│    LLM Reasoning     │  ← Ollama/Llama3 (if installed)
-│    llm_engine.py     │    Expert Rule Engine (fallback)
-│                      │    Generates human-readable analysis
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐     ┌─────────────────────────┐
-│   Alert Logger       │     │   Terminal Dashboard     │
-│   logger.py          │────▶│   dashboard.py           │
-│   logs/alerts.json   │     │   Live Rich UI           │
-└──────────────────────┘     └─────────────────────────┘
-           │
-           ▼
-┌──────────────────────┐
-│  Automated Response  │
-│  BLOCK / THROTTLE /  │
-│  LOG / ISOLATE       │
-└──────────────────────┘
-```
+
+### Core components
+
+- `simulator.py` — generates normal traffic and synthetic attack scenarios.
+- `detector.py` — feature extraction and Isolation Forest anomaly scoring.
+- `llm_engine.py` — optional Ollama integration plus deterministic fallback analysis.
+- `dashboard.py` — Rich terminal interface.
+- `logger.py` — alert persistence and statistics.
+- `report.py` — post-session report generation.
+- `main.py` — application entry point and CLI.
 
 ---
 
-## ⚙️ How It Works
+## 🔬 Detection Pipeline
 
-### Stage 1 — Traffic Generation
-The `AttackSimulator` generates realistic network packets — both normal traffic
-and attack traffic. Normal traffic follows real-world patterns (HTTP, HTTPS, SSH,
-DNS). About 8% of packets are anomalous by default, mimicking real network conditions.
+### 1. Traffic generation
 
-### Stage 2 — Feature Extraction
-Each packet is converted into a **10-dimensional feature vector:**
-- Packet size, inter-arrival time, destination port, source port
-- TCP flags, TTL, payload entropy, flow duration
-- Bytes per second, hour of day
+The simulator produces normal traffic patterns such as HTTP, HTTPS, SSH, and DNS alongside controlled attack scenarios. This provides a reproducible environment for demonstrating the detection pipeline.
 
-### Stage 3 — Isolation Forest Detection
-The **Isolation Forest** model (150 estimators, 8% contamination) scores each
-packet. Lower scores = more anomalous. The model is pre-trained on synthetic
-normal traffic and continuously updated via online retraining.
+### 2. Feature extraction
 
-### Stage 4 — Severity Classification
-Anomaly scores are mapped to severity levels:
+Traffic is represented using features including:
 
-| Score Range | Severity | Response |
-|---|---|---|
-| Below -0.55 | 🔴 CRITICAL | Block IP + Isolate Segment + Alert SOC |
-| -0.55 to -0.40 | 🟠 HIGH | Block IP + Update Firewall Rules |
-| -0.40 to -0.25 | 🟡 MEDIUM | Throttle Traffic + Flag for Review |
-| -0.25 to -0.10 | 🔵 LOW | Log Event + Continue Monitoring |
+- packet size
+- inter-arrival time
+- source/destination ports
+- TCP flags
+- TTL
+- payload entropy
+- flow duration
+- bytes per second
+- hour of day
 
-### Stage 5 — LLM Threat Analysis
-Every detected anomaly gets a natural-language threat analysis explaining:
-- What the attack is and how it works
-- Why this traffic pattern is suspicious
-- What action should be taken
+### 3. Isolation Forest
 
-### Stage 6 — Automated Response
-The system automatically executes tiered countermeasures without human
-intervention — from simple logging to full network segment isolation.
+The detector uses an **unsupervised Isolation Forest** model. It learns the structure of the supplied traffic and assigns anomaly scores to new observations.
+
+The current configuration uses **150 estimators** and an **8% contamination setting** in the prototype.
+
+### 4. Severity classification
+
+Anomaly scores are mapped to application-level severity bands, which are then surfaced in the dashboard and logs.
+
+### 5. Threat explanation
+
+Detected anomalies can be passed to Ollama/Llama for human-readable analysis. When Ollama is unavailable, the built-in rule engine provides deterministic fallback explanations.
 
 ---
 
-## 🎯 Attack Types Detected
+## 🎯 Simulated Attack Scenarios
 
-| Attack | Description | Detection Rate |
-|---|---|---|
-| **Port Scan** | Sequential port enumeration (nmap/masscan style) | ✅ 100% |
-| **DDoS Flood** | High-volume packet flood targeting a single host | ✅ 100% |
-| **Data Exfiltration** | Large encrypted outbound transfer on unusual port | ✅ 100% |
-| **Brute Force** | Rapid authentication attempts on SSH/RDP | ✅ 100% |
-| **C2 Beacon** | Periodic encrypted command-and-control beaconing | ✅ 100% |
-| **NULL Scan** | Zero-flag TCP packets to evade stateful firewalls | ✅ 100% |
-| **Zero-Day (Unknown)** | Novel anomalous patterns with no known signature | ✅ Flagged |
+The current simulator includes:
 
----
-
-## 📊 Detection Results
-
-Detection rates measured by injecting known attack bursts (10 packets each):
-
-| Attack Type | Packets Sent | Detected | Rate |
-|---|---|---|---|
-| Port Scan | 10 | 10 | 100% |
-| DDoS Flood | 10 | 10 | 100% |
-| Data Exfiltration | 10 | 10 | 100% |
-| Brute Force | 10 | 10 | 100% |
-| C2 Beacon | 10 | 10 | 100% |
-| NULL Scan | 10 | 10 | 100% |
-
-**Model Performance:**
-
-| Metric | Value |
+| Scenario | Purpose |
 |---|---|
-| Model | Isolation Forest (150 estimators) |
-| Training | Unsupervised — no labeled data needed |
-| Accuracy | ~92–96% |
-| False Positive Rate | ~2–5% |
-| Contamination | 8% |
+| Port Scan | Detect unusual sequential port activity |
+| DDoS Flood | Detect high-volume traffic bursts |
+| Data Exfiltration | Detect unusual large outbound transfers |
+| Brute Force | Detect rapid authentication attempts |
+| C2 Beacon | Detect periodic beacon-like traffic |
+| NULL Scan | Detect unusual TCP flag patterns |
 
-### Confusion Matrix
-<img width="750" height="600" alt="confusion_matrix" src="https://github.com/user-attachments/assets/8c470c99-1575-42b6-975b-bc4bdb71de18" />
+These are **synthetic scenarios for experimentation and demonstration**, not evidence of production-world detection performance.
 
+---
 
-### Model Comparison
-<img width="1800" height="900" alt="model_comparison" src="https://github.com/user-attachments/assets/a831e35f-278d-4c51-911e-bf5d3ec54519" />
+## 📊 Evaluation
 
+The repository includes experiments comparing model behavior and visualizing results.
+
+<img width="750" height="600" alt="AI-IDS confusion matrix" src="https://github.com/user-attachments/assets/8c470c99-1575-42b6-975b-bc4bdb71de18" />
+
+<img width="1800" height="900" alt="AI-IDS model comparison" src="https://github.com/user-attachments/assets/a831e35f-278d-4c51-911e-bf5d3ec54519" />
+
+> **Important:** Reported detection rates and accuracy values are based on the project's synthetic test setup. They should not be interpreted as benchmarks on real enterprise traffic.
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Component | Technology | Purpose |
-|---|---|---|
-| Language | Python 3.10+ | Core development |
-| ML Detection | Scikit-learn 1.4.0 | Isolation Forest model |
-| Terminal UI | Rich 13.7.0 | Live dashboard rendering |
-| LLM Reasoning | Ollama / Llama 3 | Threat analysis (optional) |
-| Fallback Engine | Expert Rule System | Built-in threat analysis |
-| Data Processing | NumPy 1.26.0 | Feature engineering |
-| Alert Storage | JSON (JSONL) | Persistent alert logging |
+| Layer | Technology |
+|---|---|
+| Language | Python 3.10+ |
+| ML | Scikit-learn / Isolation Forest |
+| Numerical processing | NumPy |
+| Terminal UI | Rich |
+| LLM analysis | Ollama / Llama (optional) |
+| Persistence | JSON / JSONL-style logs |
+| Testing environment | Synthetic network traffic |
 
 ---
 
-## 🚀 Installation
+## 🚀 Getting Started
 
 ### Requirements
-- Python 3.10 or higher
-- 100 MB free disk space
-- Windows / Linux / Mac
+
+- Python 3.10+
+- pip
+- Windows, Linux, or macOS
+
+### Installation
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/karankr-singh/ai-ids-zero-day-detection.git
 cd ai-ids-zero-day-detection
 
-# 2. Install dependencies (only 3 packages)
+python -m venv .venv
+```
+
+Activate the environment:
+
+```bash
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+
+# Linux / macOS
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-### Optional — Enable Real LLM (Llama 3)
-```bash
-# Install Ollama from https://ollama.ai
-ollama pull llama3
+### Optional LLM support
 
-# AI-IDS will auto-detect and use it
-```
-
-> **Note:** Without Ollama, the built-in expert rule engine provides
-> equivalent threat analysis automatically. No setup needed.
+If Ollama is installed and configured with a compatible model, AI-IDS can use it for richer natural-language threat analysis. Otherwise, the built-in fallback engine is used.
 
 ---
 
 ## ▶️ Usage
 
+### Live monitoring
+
 ```bash
-# Live monitoring mode (default)
 python main.py
+```
 
-# 45-second scripted demo with 4 attack waves
+### Demonstration mode
+
+```bash
 python main.py --demo
+```
 
-# Inject a specific attack type
+### Simulate a specific scenario
+
+```bash
 python main.py --attack port_scan
 python main.py --attack ddos
 python main.py --attack data_exfiltration
 python main.py --attack brute_force
 python main.py --attack c2_beacon
 python main.py --attack null_scan
-
-# Adjust analysis speed
-python main.py --speed 10    # 10 packets/second
-
-# Press Ctrl+C to stop — session report auto-saved
 ```
 
-### Dashboard Controls
-| Key | Action |
-|---|---|
-| `Ctrl+C` | Stop monitoring + save session report |
+### Control simulation speed
 
-### Output Files (auto-generated on exit)
+```bash
+python main.py --speed 10
 ```
-logs/
-├── alerts.json          ← Every alert in JSONL format
-└── session_report.txt   ← Full session summary
-```
+
+Press **Ctrl+C** to stop the session and generate the configured output files.
 
 ---
 
-## 📂 Project Structure
+## 📁 Project Structure
 
-```
+```text
 ai-ids-zero-day-detection/
-│
-├── main.py          ← Entry point — run this
-├── detector.py      ← Isolation Forest ML engine
-├── simulator.py     ← Network traffic + attack generator
-├── llm_engine.py    ← LLM reasoning (Ollama + expert fallback)
-├── logger.py        ← Alert storage and statistics
-├── dashboard.py     ← Live Rich terminal dashboard
-├── report.py        ← Post-session report generator
-├── requirements.txt ← pip install -r requirements.txt
+├── main.py
+├── detector.py
+├── simulator.py
+├── llm_engine.py
+├── logger.py
+├── dashboard.py
+├── report.py
+├── requirements.txt
+└── logs/                 # generated runtime output
 ```
 
 ---
 
-## 🔭 Future Scope
+## 📦 Output
 
-- [ ] Real network packet capture via Scapy / Wireshark
-- [ ] Integration with enterprise SIEM platforms (Splunk, IBM QRadar)
-- [ ] Transformer-based deep learning detection model
-- [ ] Federated learning across multiple network nodes
-- [ ] Encrypted TLS traffic analysis
-- [ ] Web-based monitoring dashboard (Flask/React)
-- [ ] Fully autonomous response with reinforcement learning
-- [ ] Docker containerization for easy deployment
+A monitoring session can produce:
+
+```text
+logs/
+├── alerts.json
+└── session_report.txt
+```
+
+These files make it easier to inspect detections after a demonstration or experiment.
 
 ---
 
-## 🔗 Related Project
+## ⚠️ Scope & Limitations
 
-👉 **[Transformer IDS — Research Model](https://github.com/karankr-singh/transformer-zero-day-ids)**
-Research-focused Transformer-based IDS with UNSW-NB15 dataset evaluation,
-multi-model comparison, and self-evolving learning concept.
+This repository is a **research/academic prototype**. It currently relies on simulated traffic rather than passive capture from a production network.
 
-Both repositories together form the complete Final Year Project:
-- **Transformer IDS** = Research + Theory + Dataset Evaluation
-- **AI-IDS (this repo)** = Working Prototype + Live Demo + Real-time Detection
+It does **not** provide guaranteed zero-day detection, production-grade incident response, or validated enterprise IDS performance.
+
+Planned areas include:
+
+- real packet capture using Scapy/Wireshark integrations
+- SIEM integrations
+- transformer-based detection models
+- encrypted traffic analysis
+- federated learning experiments
+- web-based monitoring
+- stronger automated response mechanisms
+- containerized deployment
+
+The project is intended for controlled experimentation and learning.
+
+---
+
+## 🔗 Related Research Project
+
+### Transformer Zero-Day IDS
+
+[**karankr-singh/transformer-zero-day-ids**](https://github.com/karankr-singh/transformer-zero-day-ids)
+
+The two repositories explore the same broader problem from different angles:
+
+| Repository | Focus |
+|---|---|
+| **AI-IDS** | Working local prototype, anomaly detection, simulation, dashboard |
+| **Transformer Zero-Day IDS** | ML research, Transformer-based detection, dataset evaluation |
 
 ---
 
 ## 👥 Contributors
 
-| Name | Role |
-|---|---|
-| Karan Kumar Singh | Developer & Researcher |
-| Kaushik Sheregar | Developer & Researcher |
-| Dr. Saneh Lata Yadav | Faculty Mentor & Guide |
+- **Karan Kumar Singh** — Developer & Researcher
+- **Kaushik Sheregar** — Developer & Researcher
+- **Dr. Saneh Lata Yadav** — Faculty Mentor
 
-</div>
+---
+
+## 📄 License
+
+See the repository for licensing information.
