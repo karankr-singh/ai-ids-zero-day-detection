@@ -17,6 +17,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0.0"]
 
+[tool.setuptools]
+py-modules = ["simulator", "main", "report", "dashboard", "detector", "logger", "llm_engine"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
