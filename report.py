@@ -61,7 +61,7 @@ def generate_report(alerts: list, detector, filepath: str):
             f":{a.get('protocol','?')}"
         )
         lines.append(f"            SCORE={a.get('score',0):.4f}")
-        lines.append(f"            ACTION: {a.get('action','?')}")
+        lines.append(f"            ACTION: {a.get('proposed_response','?')}")
         if a.get("analysis"):
             # Wrap at 60 chars
             words = a["analysis"].split()
