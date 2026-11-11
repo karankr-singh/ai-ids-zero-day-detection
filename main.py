@@ -123,7 +123,7 @@ def demo_mode(duration: int = 45):
     def _retrain():
         time.sleep(22)
         if _running:
-            dash.log_system("Auto-retraining model on accumulated data...", "cyan")
+            dash.log_system("Retraining on trusted simulator-labeled normal samples...", "cyan")
             ok = detector.retrain()
             if ok:
                 dash.log_system(
