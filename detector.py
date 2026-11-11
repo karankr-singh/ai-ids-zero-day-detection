@@ -170,7 +170,7 @@ class AnomalyDetector:
             "anomaly_score": round(score, 4),
             "severity": severity,
             "threat_type": threat_type,
-            "response_action": proposed_response,
+            "proposed_response": proposed_response,
         }
 
     def _classify_threat(self, pkt: dict, score: float) -> str:
