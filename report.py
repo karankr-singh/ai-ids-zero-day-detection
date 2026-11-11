@@ -23,8 +23,9 @@ def generate_report(alerts: list, detector, filepath: str):
         f"  Packets analysed  : {stats['total_analyzed']:,}",
         f"  Anomalies detected: {stats['total_anomalies']:,}",
         f"  Detection rate    : {stats['total_anomalies'] / max(stats['total_analyzed'],1)*100:.1f}%",
-        f"  Model accuracy    : {detector.accuracy*100:.1f}%",
-        f"  False positive    : {detector.fpr*100:.1f}%",
+        f"  Model status      : {detector.training_status}",
+        f"  Trusted normal samples: {stats['trusted_normal_samples']:,}",
+        f"  Retrain count     : {stats['retrain_count']:,}",
         "",
         "── SEVERITY DISTRIBUTION ────────────────────────────────",
     ]
@@ -59,7 +60,7 @@ def generate_report(alerts: list, detector, filepath: str):
             f"            SRC={a.get('src_ip','?')}  DST={a.get('dst_ip','?')}"
             f":{a.get('protocol','?')}"
         )
-        lines.append(f"            SCORE={a.get('score',0):.4f}  CONF={a.get('confidence',0):.3f}")
+        lines.append(f"            SCORE={a.get('score',0):.4f}")
         lines.append(f"            ACTION: {a.get('action','?')}")
         if a.get("analysis"):
             # Wrap at 60 chars
