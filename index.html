@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-IDS: anomaly-based intrusion detection prototype</title>
+<meta name="description" content="A local Python prototype that scores simulated network traffic with an unsupervised Isolation Forest. Try a simplified version live in your browser.">
+<meta property="og:title" content="AI-IDS: anomaly-based intrusion detection prototype">
+<meta property="og:description" content="Inject simulated attacks and watch an Isolation Forest flag them, live in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://karankr-singh.github.io/ai-ids-zero-day-detection/">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%A1%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f4f1;--surface:#e8ece8;--ink:#16212b;--muted:#56636f;--rule:#cfd6d2;--term:#16212b;--term-ink:#d9e2ea;--term-dim:#8497a8;--accent:#1f5fbf;--alert:#b3263e;--warn:#b7791f;--ok:#2f7d57;--sans:"Instrument Sans",system-ui,sans-serif;--serif:"Instrument Serif",Georgia,serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10171e;--surface:#18222c;--ink:#e4eaef;--muted:#93a1ad;--rule:#2a3641;--term:#0a1016;--accent:#6ea2ee;--alert:#ee6b80;--warn:#e0a94a;--ok:#6cc59a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10171e;--surface:#18222c;--ink:#e4eaef;--muted:#93a1ad;--rule:#2a3641;--term:#0a1016;--accent:#6ea2ee;--alert:#ee6b80;--warn:#e0a94a;--ok:#6cc59a;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:3px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 24px}
+#prog{position:fixed;top:0;left:0;height:3px;width:0;background:var(--accent);z-index:50}
+header.top{border-bottom:1px solid var(--rule);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);z-index:40}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:12px;padding-bottom:12px;flex-wrap:wrap}
+.brand{font-weight:600;color:var(--ink);text-decoration:none}
+nav{display:flex;gap:18px;flex-wrap:wrap;font-size:15px;align-items:center}
+nav a{color:var(--muted);text-decoration:none}nav a:hover{color:var(--ink)}
+#theme{background:none;border:1px solid var(--rule);color:var(--ink);border-radius:20px;padding:4px 12px;font:500 13px var(--sans);cursor:pointer}
+h1,h2,h3{font-family:var(--serif);font-weight:400;line-height:1.08;margin:0}
+h1{font-size:clamp(2.6rem,6.4vw,4.8rem);letter-spacing:-.015em;min-height:2.2em}
+h2{font-size:clamp(1.9rem,3.6vw,2.6rem);letter-spacing:-.01em;margin-bottom:12px}
+h3{font-size:1.45rem;margin-bottom:6px}
+p{margin:0 0 1em;max-width:68ch}
+.lede{font-size:1.2rem;color:var(--muted);max-width:60ch}
+code{font:400 .9em var(--mono)}
+.hero{position:relative;padding:72px 0 64px;--mx:70%;--my:30%}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(420px circle at var(--mx) var(--my),color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%),linear-gradient(var(--rule) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,var(--rule) 1px,transparent 1px) 0 0/48px 48px;opacity:.55;-webkit-mask:linear-gradient(#000 40%,transparent);mask:linear-gradient(#000 40%,transparent);pointer-events:none}
+.hero .grid{position:relative;display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center}
+.btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.btn{display:inline-block;padding:11px 20px;border:1px solid var(--ink);border-radius:4px;color:var(--ink);text-decoration:none;font:500 15px var(--sans);background:none;cursor:pointer;transition:transform .15s,background .15s}
+.btn.primary{background:var(--ink);color:var(--bg)}
+.btn:hover{transform:translateY(-2px);border-color:var(--accent)}
+.term{background:var(--term);color:var(--term-ink);border-radius:8px;overflow:hidden;border:1px solid var(--rule);box-shadow:0 20px 50px -20px color-mix(in srgb,var(--accent) 50%,transparent)}
+.term .bar{padding:9px 14px;font:500 12px var(--mono);color:var(--term-dim);border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;gap:8px}
+.term pre{margin:0;padding:16px 16px 18px;font:400 13px/1.65 var(--mono);overflow-x:auto;white-space:pre-wrap;min-height:210px}
+.t-dim{color:var(--term-dim)}.t-hi{color:#f08a9b}.t-ok{color:#7fd1a6}.t-warn{color:#e6b45c}
+.caret{display:inline-block;width:8px;height:15px;background:var(--term-ink);vertical-align:-2px;animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:0}}
+.note{font-size:14px;color:var(--muted);margin-top:10px}
+section{padding:64px 0;border-top:1px solid var(--rule)}
+.rv{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}.rv.in{opacity:1;transform:none}
+.cols{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:28px}
+.card{padding:22px;border:1px solid var(--rule);border-radius:8px;background:var(--surface);transition:transform .2s,border-color .2s;transform-style:preserve-3d}
+.card:hover{border-color:var(--accent)}
+.card p{margin:0;color:var(--muted);font-size:16px}
+/* demo */
+.demo{margin-top:28px;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--surface)}
+.demo .stage{display:grid;grid-template-columns:1.5fr 1fr}
+.cv{position:relative;background:var(--term);min-height:340px}
+#cv{display:block;width:100%;height:100%;min-height:340px}
+.axis{position:absolute;font:12px var(--mono);color:var(--term-dim);pointer-events:none}
+.side{padding:16px;border-left:1px solid var(--rule);display:flex;flex-direction:column;gap:14px;min-width:0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats div{padding:8px 4px;border:1px solid var(--rule);border-radius:6px;background:var(--bg)}
+.stats b{display:block;font:500 22px var(--mono)}.stats span{font-size:12px;color:var(--muted);line-height:1.2;display:block}
+#feed{list-style:none;margin:0;padding:0;font:12.5px/1.5 var(--mono);height:170px;overflow:hidden}
+#feed li{padding:3px 0;border-bottom:1px dashed var(--rule);display:flex;gap:8px;justify-content:space-between}
+#feed .hit{color:var(--ok)}#feed .fa{color:var(--warn)}#feed .miss{color:var(--alert)}
+.controls{padding:14px 16px;border-top:1px solid var(--rule);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.controls .btn{padding:7px 12px;font-size:13.5px;border-radius:20px;border-color:var(--rule)}
+.controls .btn:hover{border-color:var(--alert);color:var(--alert)}
+.sens{display:flex;align-items:center;gap:10px;padding:0 16px 14px;font-size:14px;color:var(--muted);flex-wrap:wrap}
+.sens input{flex:1;min-width:160px;accent-color:var(--accent)}
+.sens output{font:500 13px var(--mono);color:var(--ink);min-width:3.2em}
+/* pipeline */
+.steps{display:flex;gap:0;margin-top:28px;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.steps button{flex:1;padding:16px 10px;background:var(--surface);border:0;border-right:1px solid var(--rule);color:var(--ink);font:500 15px var(--sans);cursor:pointer;text-align:left;transition:background .2s}
+.steps button:last-child{border-right:0}
+.steps button small{display:block;font:400 12px var(--mono);color:var(--muted);margin-top:2px}
+.steps button[aria-selected="true"]{background:var(--ink);color:var(--bg)}.steps button[aria-selected="true"] small{color:var(--term-dim)}
+#stepinfo{margin-top:16px;padding:18px 20px;border-left:4px solid var(--accent);background:var(--surface);border-radius:0 6px 6px 0;min-height:96px}
+.tablewrap{overflow-x:auto;margin-top:24px}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:15.5px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font:600 14px var(--sans);color:var(--muted)}td:first-child{font-weight:500;white-space:nowrap}
+tbody tr{transition:background .15s}tbody tr:hover{background:var(--surface)}
+.callout{margin-top:24px;padding:20px 22px;border-left:4px solid var(--warn);background:var(--surface);border-radius:0 6px 6px 0}
+.callout p:last-child{margin:0}
+ul.plain{margin:16px 0 0;padding-left:1.2em;max-width:68ch}ul.plain li{margin-bottom:8px}
+.pub{font-size:15px}.pub dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 20px;margin:16px 0 0}.pub dt{color:var(--muted)}.pub dd{margin:0}
+footer{border-top:1px solid var(--rule);padding:32px 0 48px;color:var(--muted);font-size:14.5px}
+footer .wrap{display:flex;gap:16px 32px;flex-wrap:wrap;justify-content:space-between}
+footer .links{display:flex;gap:20px;flex-wrap:wrap}
+@media (max-width:860px){.hero .grid,.demo .stage{grid-template-columns:1fr}.side{border-left:0;border-top:1px solid var(--rule)}.cols{grid-template-columns:1fr}.steps{flex-direction:column}.steps button{border-right:0;border-bottom:1px solid var(--rule)}}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+<header class="top"><div class="wrap">
+  <a class="brand" href="#top">AI-IDS</a>
+  <nav aria-label="Sections">
+    <a href="#demo">Live demo</a><a href="#how">How it works</a><a href="#scenarios">Scenarios</a><a href="#status">Evaluation status</a><a href="#limits">Limitations</a>
+    <a href="https://github.com/karankr-singh/ai-ids-zero-day-detection">GitHub</a>
+    <button id="theme" type="button" aria-label="Toggle light and dark theme">Theme</button>
+  </nav>
+</div></header>
+
+<main id="top">
+  <div class="hero" id="hero"><div class="wrap grid">
+    <div>
+      <h1 id="h1" aria-label="Flag unusual traffic without a signature list.">Flag unusual traffic without a signature list.</h1>
+      <p class="lede" style="margin-top:20px">AI-IDS is a local Python prototype. It scores simulated network traffic with an unsupervised Isolation Forest, explains each alert in plain language, and shows it all in a live terminal dashboard.</p>
+      <div class="btns">
+        <a class="btn primary" href="#demo">Try it in your browser</a>
+        <a class="btn" href="https://github.com/karankr-singh/ai-ids-zero-day-detection">View the code</a>
+      </div>
+    </div>
+    <div>
+      <div class="term" role="img" aria-label="Animated example of AI-IDS alerts in a terminal">
+        <div class="bar"><span id="cmd">python main.py</span><span>example</span></div>
+        <pre id="tty"></pre>
+      </div>
+      <p class="note">Illustrative alert layout cycling through the six scenarios. No real values shown.</p>
+    </div>
+  </div></div>
+
+  <section id="demo"><div class="wrap">
+    <h2 class="rv">Break it yourself</h2>
+    <p class="lede rv">A simplified Isolation Forest runs right here in your browser on three made-up traffic features. Inject an attack and watch what it catches, what it misses, and what it flags by mistake.</p>
+    <div class="demo rv">
+      <div class="stage">
+        <div class="cv"><canvas id="cv" aria-label="Scatter plot of simulated packets. Red rings mark packets flagged as anomalous."></canvas>
+          <span class="axis" style="left:10px;bottom:8px">packet size →</span>
+          <span class="axis" style="left:10px;top:8px">↑ sending rate</span>
+          <span class="axis" style="right:10px;top:8px">dot size = payload entropy</span></div>
+        <div class="side">
+          <div class="stats" aria-live="polite">
+            <div><b id="sC" style="color:var(--ok)">0</b><span>attacks caught</span></div>
+            <div><b id="sM" style="color:var(--alert)">0</b><span>attacks missed</span></div>
+            <div><b id="sF" style="color:var(--warn)">0</b><span>normal packets flagged</span></div>
+          </div>
+          <ul id="feed" aria-label="Recent alerts"></ul>
+        </div>
+      </div>
+      <div class="controls" id="atk"></div>
+      <div class="sens"><label for="thr">Alert threshold</label><input id="thr" type="range" min="0.45" max="0.75" step="0.01" value="0.58"><output id="thrv">0.58</output><span>Lower catches more attacks and flags more normal traffic.</span></div>
+    </div>
+    <p class="note rv">Browser demo only. It is a toy re-implementation of the idea with synthetic data. It is not the project's Python model, and what you see here says nothing about that model's accuracy.</p>
+  </div></section>
+
+  <section id="what"><div class="wrap">
+    <h2 class="rv">What the Python project does</h2>
+    <div class="cols">
+      <div class="card rv"><h3>Learns what normal looks like</h3><p>An Isolation Forest (150 estimators) is fit on a normal-only baseline and scores new records by how easily they are isolated. No attack labels are used.</p></div>
+      <div class="card rv"><h3>Explains alerts</h3><p>Anomalies can be passed to a local Ollama model for a readable summary. Without Ollama, a built-in rule engine produces deterministic explanations.</p></div>
+      <div class="card rv"><h3>Simulates six attack types</h3><p>A traffic simulator mixes normal HTTP, HTTPS, SSH, and DNS records with six synthetic attack profiles so you can exercise the whole pipeline.</p></div>
+      <div class="card rv"><h3>Shows everything live</h3><p>A full-screen Rich dashboard displays packet counts, the alert feed, severity distribution, and protocol activity. Alerts and a session report are saved to disk.</p></div>
+    </div>
+  </div></section>
+
+  <section id="how"><div class="wrap">
+    <h2 class="rv">How it works</h2>
+    <p class="lede rv">Each stage is its own Python module. Pick one.</p>
+    <div class="steps rv" role="tablist" aria-label="Pipeline stages" id="steps"></div>
+    <div id="stepinfo" role="tabpanel" aria-live="polite"></div>
+  </div></section>
+
+  <section id="scenarios"><div class="wrap">
+    <h2 class="rv">Simulated attack scenarios</h2>
+    <p class="lede rv">Run any of them with <code>python main.py --attack &lt;name&gt;</code>.</p>
+    <div class="tablewrap rv"><table>
+      <thead><tr><th>Scenario</th><th>Pattern the detector should find unusual</th></tr></thead>
+      <tbody>
+        <tr><td>Port scan</td><td>Sequential port activity from one source</td></tr>
+        <tr><td>DDoS flood</td><td>High-volume bursts of traffic</td></tr>
+        <tr><td>Data exfiltration</td><td>Unusually large outbound transfers</td></tr>
+        <tr><td>Brute force</td><td>Rapid repeated authentication attempts</td></tr>
+        <tr><td>C2 beacon</td><td>Periodic, beacon-like connections</td></tr>
+        <tr><td>NULL scan</td><td>Packets with no TCP flags set</td></tr>
+      </tbody></table></div>
+    <p style="margin-top:16px;color:var(--muted)">These are synthetic scenarios for demonstration. Detecting them in the simulator says little about performance on real traffic.</p>
+  </div></section>
+
+  <section id="status"><div class="wrap">
+    <h2 class="rv">Evaluation status</h2>
+    <div class="callout rv">
+      <p><strong>The live Isolation Forest pipeline has not been evaluated on an independent, labeled benchmark dataset.</strong> For that reason this page, the dashboard, and the session reports show no accuracy, F1, or false-positive figures.</p>
+      <p>The next step is to score the detector on a labeled dataset such as UNSW-NB15, then publish the code, splits, and results together, including recall and false-positive rate.</p>
+    </div>
+  </div></section>
+
+  <section id="limits"><div class="wrap">
+    <h2 class="rv">Limitations</h2>
+    <ul class="plain rv">
+      <li>It runs on simulated packet-like records. It does not capture live network traffic.</li>
+      <li>"Zero-day capable" means anomaly scoring can flag unseen patterns. It does not guarantee detection of real zero-day attacks.</li>
+      <li>The threshold uses scikit-learn's <code>contamination="auto"</code>, a default that has not been validated on representative data.</li>
+      <li>Responses are proposals only. The application does not block IPs, isolate segments, or change firewall rules.</li>
+      <li>Retraining uses only samples explicitly marked as trusted-normal, and its effect on detection quality has not been measured.</li>
+    </ul>
+  </div></section>
+
+</main>
+
+<footer><div class="wrap">
+  <span class="links"><a href="https://github.com/karankr-singh/ai-ids-zero-day-detection">Repository</a><a href="https://github.com/karankr-singh/transformer-zero-day-ids">Research repository</a><a href="https://doi.org/10.5281/zenodo.19250586">Zenodo</a></span>
+</div></footer>
+
+<script>
+(function(){
+var RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+var $=function(i){return document.getElementById(i)};
+/* theme */
+var root=document.documentElement;
+$('theme').onclick=function(){var dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;root.dataset.theme=dark?'light':'dark'};
+/* scroll progress + reveal */
+addEventListener('scroll',function(){var h=document.documentElement;$('prog').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%'},{passive:true});
+var rv=document.querySelectorAll('.rv');
+if('IntersectionObserver' in window&&!RM){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});rv.forEach(function(e){io.observe(e)})}else rv.forEach(function(e){e.classList.add('in')});
+/* hero glow follows pointer */
+var hero=$('hero');hero.addEventListener('pointermove',function(e){var r=hero.getBoundingClientRect();hero.style.setProperty('--mx',(e.clientX-r.left)+'px');hero.style.setProperty('--my',(e.clientY-r.top)+'px')});
+/* card tilt */
+if(!RM)document.querySelectorAll('.card').forEach(function(c){c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform='perspective(700px) rotateY('+x*6+'deg) rotateX('+-y*6+'deg)'});c.addEventListener('pointerleave',function(){c.style.transform=''})});
+/* headline scramble */
+var h1=$('h1'),finalT=h1.textContent,CH='abcdefghijklmnopqrstuvwxyz01./<>';
+if(!RM){var f=0;var iv=setInterval(function(){f++;var out='';for(var i=0;i<finalT.length;i++){out+=(finalT[i]===' '||f>i*.9+8)?finalT[i]:CH[Math.floor(Math.random()*CH.length)]}h1.textContent=out;if(f>finalT.length*1.1+10){h1.textContent=finalT;clearInterval(iv)}},35)}
+/* hero typed terminal */
+var SC=[
+['port_scan',[['t-dim','source   ','simulated packet record'],['t-dim','severity ','HIGH','t-hi'],['t-dim','pattern  ','sequential ports, SYN-only flags'],['t-dim','analysis ','Many ports probed from one source in a short window.'],['t-dim','response ','proposed: throttle source (not enforced)','t-ok']]],
+['ddos',[['t-dim','source   ','simulated packet record'],['t-dim','severity ','CRITICAL','t-hi'],['t-dim','pattern  ','burst of packets at a very high rate'],['t-dim','analysis ','Volume far above the normal baseline.'],['t-dim','response ','proposed: block source (not enforced)','t-ok']]],
+['data_exfiltration',[['t-dim','source   ','simulated packet record'],['t-dim','severity ','HIGH','t-hi'],['t-dim','pattern  ','large outbound payloads, high entropy'],['t-dim','analysis ','Looks like an encrypted bulk upload.'],['t-dim','response ','proposed: throttle source (not enforced)','t-ok']]],
+['c2_beacon',[['t-dim','source   ','simulated packet record'],['t-dim','severity ','MEDIUM','t-warn'],['t-dim','pattern  ','small packets at regular, slow intervals'],['t-dim','analysis ','Periodic check-ins resemble a beacon.'],['t-dim','response ','proposed: log and watch (not enforced)','t-ok']]]];
+var tty=$('tty'),cmd=$('cmd'),si=0;
+function typeScenario(){var s=SC[si%SC.length];si++;cmd.textContent='python main.py --attack '+s[0];tty.innerHTML='';var li=0,ci=0,cur=null;
+ (function step(){if(li>=s[1].length){setTimeout(typeScenario,2600);return}
+  var L=s[1][li];if(ci===0){cur=document.createElement('div');cur.innerHTML='<span class="'+L[0]+'">'+L[1]+'</span><span class="v '+(L[3]||'')+'"></span><span class="caret"></span>';tty.appendChild(cur)}
+  var txt=L[2];if(RM){cur.querySelector('.v').textContent=txt;ci=txt.length}else{ci++;cur.querySelector('.v').textContent=txt.slice(0,ci)}
+  if(ci>=txt.length){cur.querySelector('.caret').remove();li++;ci=0;setTimeout(step,RM?60:260)}else setTimeout(step,18)})()}
+typeScenario();
+/* ---- pipeline tabs ---- */
+var ST=[['Simulate','simulator.py','Generates normal HTTP, HTTPS, SSH, and DNS records alongside six synthetic attack profiles at an adjustable speed. Everything downstream sees packet-like records, never real network traffic.'],
+['Extract','detector.py','Turns each record into a 10-dimensional feature vector (packet size, inter-arrival time, ports, TCP flags, TTL, payload entropy, duration, bytes per second, hour of day) and scales it. Features are per record, not aggregated into sessions.'],
+['Score','detector.py','An Isolation Forest with 150 estimators gives each record an anomaly score. Records that are easy to isolate from the normal baseline score as more anomalous. The cutoff is scikit-learn\u2019s contamination="auto" default.'],
+['Explain','llm_engine.py','Anomalies go to a local Ollama model for a plain-language summary. If Ollama is not available, a deterministic rule engine writes the explanation instead.'],
+['Report','dashboard.py, logger.py, report.py','Scores map to four heuristic severity bands for triage. The Rich dashboard shows them live, alerts are saved to alerts.json, and a session report is written when you press Ctrl+C. Responses are proposals only.']];
+var sb=$('steps');
+ST.forEach(function(s,i){var b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.innerHTML=(i+1)+'. '+s[0]+'<small>'+s[1]+'</small>';b.onclick=function(){pick(i)};sb.appendChild(b)});
+function pick(i){[].forEach.call(sb.children,function(b,j){b.setAttribute('aria-selected',j===i)});$('stepinfo').innerHTML='<h3>'+ST[i][0]+'</h3><p style="margin:0;color:var(--muted)">'+ST[i][2]+'</p>'}
+pick(0);
+/* ---- toy isolation forest ---- */
+function rn(){var u=0,v=0;while(!u)u=Math.random();v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(6.2832*v)}
+function cl(x){return Math.max(0,Math.min(1,x))}
+function normal(){return[cl(.4+.12*rn()),cl(.5+.14*rn()),cl(.45+.1*rn())]}
+var AT={
+ 'Port scan':function(){return[cl(.06+.03*rn()),cl(.93+.03*rn()),cl(.12+.05*rn())]},
+ 'DDoS flood':function(){return[cl(.5+.08*rn()),cl(.98+.015*rn()),cl(.3+.06*rn())]},
+ 'Exfiltration':function(){return[cl(.93+.04*rn()),cl(.45+.1*rn()),cl(.95+.03*rn())]},
+ 'Brute force':function(){return[cl(.22+.05*rn()),cl(.8+.06*rn()),cl(.5+.06*rn())]},
+ 'C2 beacon':function(){return[cl(.17+.04*rn()),cl(.12+.04*rn()),cl(.8+.06*rn())]},
+ 'NULL scan':function(){return[cl(.03+.02*rn()),cl(.6+.06*rn()),cl(.04+.03*rn())]}};
+function c(n){return n>2?2*(Math.log(n-1)+.5772)-2*(n-1)/n:n===2?1:0}
+function build(d,depth,lim){if(depth>=lim||d.length<=1)return{n:d.length};var q=Math.floor(Math.random()*3),mn=1e9,mx=-1e9;d.forEach(function(p){if(p[q]<mn)mn=p[q];if(p[q]>mx)mx=p[q]});if(mn===mx)return{n:d.length};var s=mn+Math.random()*(mx-mn);return{q:q,s:s,l:build(d.filter(function(p){return p[q]<s}),depth+1,lim),r:build(d.filter(function(p){return p[q]>=s}),depth+1,lim)}}
+function path(x,t,e){return t.n!==undefined?e+c(t.n):path(x,x[t.q]<t.s?t.l:t.r,e+1)}
+var PSI=128,TREES=[];
+for(var i=0;i<100;i++){var smp=[];for(var j=0;j<PSI;j++)smp.push(normal());TREES.push(build(smp,0,7))}
+function score(x){var a=0;TREES.forEach(function(t){a+=path(x,t,0)});return Math.pow(2,-(a/TREES.length)/c(PSI))}
+/* ---- demo loop ---- */
+var cv=$('cv'),cx=cv.getContext('2d'),W=0,H=0,dpr=1,dots=[],queue=[],feed=$('feed');
+var cC=0,cM=0,cF=0,thr=.58;
+function size(){dpr=Math.min(devicePixelRatio||1,2);var r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0)}
+size();addEventListener('resize',size);
+$('thr').oninput=function(){thr=+this.value;$('thrv').textContent=thr.toFixed(2)};
+Object.keys(AT).forEach(function(k){var b=document.createElement('button');b.type='button';b.className='btn';b.textContent='Inject '+k;b.onclick=function(){for(var i=0;i<14;i++)queue.push({t:performance.now()+i*(RM?40:90),k:k})};$('atk').appendChild(b)});
+function addFeed(cls,l,r){var li=document.createElement('li');li.className=cls;li.innerHTML='<span>'+l+'</span><span>'+r+'</span>';feed.insertBefore(li,feed.firstChild);while(feed.children.length>8)feed.removeChild(feed.lastChild)}
+var tick=0;
+function emit(f,label){var s=score(f),flag=s>=thr,d={x:f[0],y:f[1],e:f[2],born:performance.now(),flag:flag,atk:!!label};dots.push(d);
+ if(label){if(flag){cC++;addFeed('hit',label,'flagged '+s.toFixed(2))}else{cM++;addFeed('miss',label,'missed '+s.toFixed(2))}}
+ else if(flag){cF++;addFeed('fa','normal traffic','false alarm '+s.toFixed(2))}
+ $('sC').textContent=cC;$('sM').textContent=cM;$('sF').textContent=cF}
+var last=performance.now(),acc=0,vis=true;
+new IntersectionObserver(function(e){vis=e[0].isIntersecting}).observe(cv);
+function frame(now){requestAnimationFrame(frame);if(!vis){last=now;return}
+ var dt=now-last;last=now;acc+=dt;while(acc>110){acc-=110;emit(normal())}
+ for(var i=queue.length-1;i>=0;i--)if(queue[i].t<=now){emit(AT[queue[i].k](),queue[i].k);queue.splice(i,1)}
+ var cs=getComputedStyle(document.documentElement),blue=cs.getPropertyValue('--accent').trim()||'#1f5fbf',red=cs.getPropertyValue('--alert').trim()||'#b3263e';
+
+ cx.clearRect(0,0,W,H);cx.globalAlpha=.08;cx.strokeStyle='#8497a8';for(var g=1;g<10;g++){cx.beginPath();cx.moveTo(g*W/10,0);cx.lineTo(g*W/10,H);cx.moveTo(0,g*H/10);cx.lineTo(W,g*H/10);cx.stroke()}
+ dots=dots.filter(function(d){return now-d.born<(d.atk?9000:4500)});
+ dots.forEach(function(d){var age=now-d.born,life=d.atk?9000:4500,px=14+d.x*(W-28),py=H-14-d.y*(H-28),r=2.5+d.e*4.5;
+  cx.globalAlpha=Math.max(0,1-age/life)*.95;cx.fillStyle=d.flag?red:blue;cx.beginPath();cx.arc(px,py,r,0,6.283);cx.fill();
+  if(d.flag&&age<900){cx.globalAlpha=(1-age/900)*.8;cx.strokeStyle=red;cx.lineWidth=2;cx.beginPath();cx.arc(px,py,r+age/900*26,0,6.283);cx.stroke()}});
+ cx.globalAlpha=1}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
