@@ -331,8 +331,3 @@ The two repositories explore the same broader problem from different angles:
 
 ---
 
-## 👥 Contributors
-
-- **Karan Kumar Singh** — Developer & Researcher
-- **Kaushik Sheregar** — Developer & Researcher
-- **Dr. Saneh Lata Yadav** — Faculty Mentor
