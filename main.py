@@ -152,7 +152,7 @@ def _build_alert(aid: int, pkt: dict, result: dict, analysis: str) -> dict:
         "score":       result["anomaly_score"],
         "threat_type": result["threat_type"],
         "analysis":    analysis,
-        "action":      result["response_action"],
+        "proposed_response": result["proposed_response"],
     }
 
 
