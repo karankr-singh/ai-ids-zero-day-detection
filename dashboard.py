@@ -110,7 +110,7 @@ class Dashboard:
         self._proto_counts[proto] = self._proto_counts.get(proto, 0) + 1
         self._tick_anomaly += 1
 
-        # Auto-response action log
+        # Proposed-response log
         action_text = f"{alert.get('threat_type','?')} from {alert.get('src_ip','?')} — {alert.get('action','?')}"
         self._actions.appendleft((sev, action_text, alert.get("timestamp", "")))
         self._refresh()
