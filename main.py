@@ -65,7 +65,7 @@ def monitoring_loop(packets_per_second: int = 5):
             if result["severity"] in ("CRITICAL", "HIGH"):
                 dash.log_system(
                     f"{result['severity']} | {result['threat_type']} | "
-                    f"{pkt['src_ip']} → {pkt['dst_ip']} | {result['response_action']}",
+                    f"{pkt['src_ip']} → {pkt['dst_ip']} | {result['proposed_response']}",
                     "red" if result["severity"] == "CRITICAL" else "yellow",
                 )
 
