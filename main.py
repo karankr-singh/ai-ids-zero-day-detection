@@ -42,14 +42,15 @@ def monitoring_loop(packets_per_second: int = 5):
 
     while _running:
         pkt = simulator.generate_packet()
+        # Simulator labels are trusted only inside this controlled demonstration.
+        detector.add_confirmed_normal(pkt, confirmed=(pkt.get("pkt_type") == "normal"))
         result = detector.analyze(pkt)
 
         dash.add_normal_tick()
         dash.update_stats({
             "packets":    detector.stats["total_analyzed"],
             "alerts":     len(log),
-            "accuracy":   detector.accuracy,
-            "fpr":        detector.fpr,
+            "training_status": detector.training_status,
             "monitoring": True,
         })
 
@@ -99,8 +100,7 @@ def inject_attack(attack_key: str, count: int = 15, delay: float = 2.0):
     dash.update_stats({
         "packets":  detector.stats["total_analyzed"],
         "alerts":   len(log),
-        "accuracy": detector.accuracy,
-        "fpr":      detector.fpr,
+        "training_status": detector.training_status,
     })
 
 
@@ -127,7 +127,7 @@ def demo_mode(duration: int = 45):
             ok = detector.retrain()
             if ok:
                 dash.log_system(
-                    f"Retraining complete — accuracy: {detector.accuracy*100:.1f}%", "green"
+                    f"Retraining complete — trusted normal samples: {detector.stats['trusted_normal_samples']}", "green"
                 )
     threading.Thread(target=_retrain, daemon=True).start()
 
@@ -153,7 +153,6 @@ def _build_alert(aid: int, pkt: dict, result: dict, analysis: str) -> dict:
         "threat_type": result["threat_type"],
         "analysis":    analysis,
         "action":      result["response_action"],
-        "confidence":  result["confidence"],
     }
 
 
@@ -213,8 +212,9 @@ def _print_summary():
     print(f"  Packets analysed : {stats['total_analyzed']:,}")
     print(f"  Anomalies found  : {stats['total_anomalies']:,}")
     print(f"  Detection rate   : {stats['total_anomalies'] / max(stats['total_analyzed'],1)*100:.1f}%")
-    print(f"  Model accuracy   : {detector.accuracy*100:.1f}%")
-    print(f"  False positive   : {detector.fpr*100:.1f}%")
+    print(f"  Model status     : {detector.training_status}")
+    print(f"  Trusted normals  : {stats['trusted_normal_samples']:,}")
+    print(f"  Retrain count    : {stats['retrain_count']:,}")
     print(f"  Alerts logged    : {len(alerts)}")
     print()
     print("  SEVERITY BREAKDOWN")
