@@ -211,7 +211,7 @@ def _print_summary():
     print("═" * 60)
     print(f"  Packets analysed : {stats['total_analyzed']:,}")
     print(f"  Anomalies found  : {stats['total_anomalies']:,}")
-    print(f"  Detection rate   : {stats['total_anomalies'] / max(stats['total_analyzed'],1)*100:.1f}%")
+    print(f"  Anomaly ratio    : {stats['total_anomalies'] / max(stats['total_analyzed'],1)*100:.1f}% (not accuracy)")
     print(f"  Model status     : {detector.training_status}")
     print(f"  Trusted normals  : {stats['trusted_normal_samples']:,}")
     print(f"  Retrain count    : {stats['retrain_count']:,}")
