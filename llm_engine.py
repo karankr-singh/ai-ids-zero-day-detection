@@ -82,33 +82,33 @@ class LLMEngine:
                 f"Source {src} is enumerating ports at ~{pps} pkt/s with minimal payload "
                 f"({size}B), a pattern consistent with automated tools (nmap/masscan). "
                 f"Target is mapping open services for later exploitation. "
-                f"Recommend: block {src} at perimeter and audit exposed services."
+                f"Proposed response: consider blocking {src} at perimeter and audit exposed services."
             ),
             "DDoS Flood": (
                 f"Volumetric flood from {src} — estimated {pps} pkt/s. "
                 f"Low-entropy uniform packets (entropy={entropy:.2f}) suggest botnet origin. "
-                f"Recommend: activate rate-limiting, engage upstream scrubbing, block source CIDR."
+                f"Proposed response: consider activating rate-limiting, engage upstream scrubbing, block source CIDR."
             ),
             "Data Exfiltration": (
                 f"Outbound transfer to {src} on non-standard port {port}. "
                 f"High payload entropy ({entropy:.2f}/8.0) and large size ({size}B) "
                 f"indicate encrypted/compressed staged exfil. "
-                f"Recommend: block connection immediately, preserve forensic logs, begin IR."
+                f"Proposed response: consider blocking connection immediately, preserve forensic logs, begin IR."
             ),
             "Brute Force Attack": (
                 f"Auth-spray from {src} targeting port {port} at {pps} attempts/s. "
                 f"Exceeds normal login rates — credential stuffing or dictionary attack. "
-                f"Recommend: enforce account lockout, block {src}, enable MFA."
+                f"Proposed response: consider enforcing account lockout, block {src}, enable MFA."
             ),
             "Encrypted C2 Channel": (
                 f"Regular beaconing ({inter:.0f}ms interval) with high entropy ({entropy:.2f}) "
                 f"from internal host to {src}. Consistent with post-exploitation RAT. "
-                f"Recommend: isolate host, forensic analysis, hunt for lateral movement."
+                f"Proposed response: consider isolating host, forensic analysis, hunt for lateral movement."
             ),
             "NULL / Malformed Packet": (
                 f"NULL-flag TCP packets from {src} — a known firewall-evasion technique. "
                 f"Anomaly score {score:.3f} indicates deliberate crafting. "
-                f"Recommend: drop packets, harden firewall ruleset, monitor {src}."
+                f"Proposed response: consider dropping packets, harden firewall ruleset, monitor {src}."
             ),
         }
 
@@ -116,9 +116,9 @@ class LLMEngine:
             f"Unclassified anomaly from {src} — score {score:.3f} deviates from baseline. "
             f"Packet profile (size={size}B, entropy={entropy:.2f}, port={port}) "
             f"does not match any known signature — potential zero-day vector. "
-            f"Recommend: manual investigation and increased monitoring."
+            f"Proposed response: manual investigation and increased monitoring."
         ))
 
         if sev == "CRITICAL":
-            analysis += " ⚠️  AUTOMATED RESPONSE INITIATED."
+            analysis += " ⚠️  No automated response is executed by this prototype."
         return analysis

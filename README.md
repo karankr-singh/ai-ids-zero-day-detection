@@ -43,10 +43,10 @@ The important distinction is that **“zero-day capable” here means anomaly-ba
 | 🧪 Attack simulation | Six synthetic attack profiles |
 | 🧠 Threat analysis | Optional Ollama/LLM reasoning with local rule-based fallback |
 | 📊 Live monitoring | Full-screen Rich terminal dashboard |
-| 📈 Feature engineering | 10-dimensional packet/flow feature representation |
+| 📈 Feature engineering | 10-dimensional packet-level prototype feature vector (not aggregated flow features) |
 | 📝 Alert persistence | JSON/JSONL-style alert logs |
 | 📄 Session reporting | Summary generated when monitoring ends |
-| 🔄 Model updates | Retraining support using accumulated traffic data |
+| 🔄 Model updates | Retraining uses only explicitly trusted-normal samples |
 
 ---
 
@@ -133,13 +133,13 @@ Traffic is represented using features including:
 
 ### 3. Isolation Forest
 
-The detector uses an **unsupervised Isolation Forest** model. It learns the structure of the supplied traffic and assigns anomaly scores to new observations.
+The detector uses an **unsupervised Isolation Forest** model. It is initialized with a synthetic normal-only baseline and assigns anomaly scores to new records. This baseline is a demonstration convenience, not representative training data.
 
-The current configuration uses **150 estimators** and an **8% contamination setting** in the prototype.
+The current configuration uses **150 estimators** and scikit-learn Isolation Forest's `contamination="auto"` threshold. This is a prototype default, not a threshold validated against a representative network dataset.
 
 ### 4. Severity classification
 
-Anomaly scores are mapped to application-level severity bands, which are then surfaced in the dashboard and logs.
+Anomaly scores are mapped to application-level severity bands using heuristic cutoffs. These labels are for demonstration triage only; they are not calibrated probabilities or validated risk ratings.
 
 ### 5. Threat explanation
 
@@ -164,15 +164,13 @@ These are **synthetic scenarios for experimentation and demonstration**, not evi
 
 ---
 
-## 📊 Evaluation
+## 📊 Evaluation status
 
-The repository includes experiments comparing model behavior and visualizing results.
+The live Isolation Forest pipeline has **not yet been evaluated on an independent, labeled benchmark dataset**. The dashboard and session reports therefore do not display accuracy, false-positive rate, or confidence percentages. The detector reports anomaly scores and decisions only.
 
-<img width="750" height="600" alt="AI-IDS confusion matrix" src="https://github.com/user-attachments/assets/8c470c99-1575-42b6-975b-bc4bdb71de18" />
+Earlier synthetic comparison charts and confusion matrices have been removed from the primary project README because they do not evaluate the live Isolation Forest pipeline on independent data. They may be restored in a clearly separated research appendix only if their dataset generation, split, labels, and exact evaluated model are documented and reproducible.
 
-<img width="1800" height="900" alt="AI-IDS model comparison" src="https://github.com/user-attachments/assets/a831e35f-278d-4c51-911e-bf5d3ec54519" />
-
-> **Important:** Reported detection rates and accuracy values are based on the project's synthetic test setup. They should not be interpreted as benchmarks on real enterprise traffic.
+> **Important:** Synthetic demonstrations are useful for exercising software paths, but do not establish generalization to real network traffic.
 
 ---
 
@@ -297,9 +295,9 @@ These files make it easier to inspect detections after a demonstration or experi
 
 ## ⚠️ Scope & Limitations
 
-This repository is a **research/academic prototype**. It currently relies on simulated traffic rather than passive capture from a production network.
+This repository is a **research/academic prototype**. The current runtime uses simulated packet-like records, not passive capture from a production network. Features such as inter-arrival time, duration, and throughput are generated per record; the current detector does not aggregate packets into sessions or temporal flows.
 
-It does **not** provide guaranteed zero-day detection, production-grade incident response, or validated enterprise IDS performance.
+It does **not** provide guaranteed zero-day detection, production-grade incident response, calibrated confidence, or validated enterprise IDS performance. Dashboard response entries are proposed actions only; the application does not block IP addresses, isolate network segments, or modify firewall rules.
 
 Planned areas include:
 

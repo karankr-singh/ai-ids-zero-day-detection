@@ -78,7 +78,7 @@ class Dashboard:
 
         self._stats = {
             "packets": 0, "alerts": 0,
-            "accuracy": 0.0, "fpr": 0.0,
+            "training_status": "synthetic baseline (not independently evaluated)",
             "monitoring": False,
         }
         self._sev_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
@@ -110,8 +110,8 @@ class Dashboard:
         self._proto_counts[proto] = self._proto_counts.get(proto, 0) + 1
         self._tick_anomaly += 1
 
-        # Auto-response action log
-        action_text = f"{alert.get('threat_type','?')} from {alert.get('src_ip','?')} — {alert.get('action','?')}"
+        # Proposed-response log
+        action_text = f"{alert.get('threat_type','?')} from {alert.get('src_ip','?')} — {alert.get('proposed_response','?')}"
         self._actions.appendleft((sev, action_text, alert.get("timestamp", "")))
         self._refresh()
 
@@ -179,15 +179,11 @@ class Dashboard:
         t.add_column(justify="left",   ratio=3)
         t.add_column(justify="center", ratio=1)
         t.add_column(justify="center", ratio=1)
-        t.add_column(justify="center", ratio=1)
-        t.add_column(justify="center", ratio=1)
         t.add_column(justify="right",  ratio=2)
         t.add_row(
             f"[bold bright_cyan]AI-IDS[/]  [grey50]Intrusion Detection System v1.0[/]",
             f"[grey50]PACKETS[/]\n[bold bright_cyan]{s['packets']:,}[/]",
             f"[grey50]ALERTS[/]\n[bold bright_red]{s['alerts']:,}[/]",
-            f"[grey50]ACCURACY[/]\n[bold bright_green]{s['accuracy']*100:.1f}%[/]",
-            f"[grey50]FALSE POS[/]\n[bold bright_yellow]{s['fpr']*100:.1f}%[/]",
             status_str,
         )
         return Panel(t, style="on grey7", border_style="bright_cyan", height=3)
@@ -302,9 +298,9 @@ class Dashboard:
                 ts,
             )
         if not self._actions:
-            tbl.add_row("[grey50]—[/]", "[grey50]No automated actions yet[/]", "")
+            tbl.add_row("[grey50]—[/]", "[grey50]No response proposals yet[/]", "")
 
-        return Panel(tbl, title="[bold bright_cyan]⚙️  Response Actions[/]",
+        return Panel(tbl, title="[bold bright_cyan]⚙️  Proposed Responses[/]",
                      border_style="grey23", padding=(0, 0))
 
     # ── Terminal log ───────────────────────────────────────────────
