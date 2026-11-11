@@ -168,11 +168,7 @@ These are **synthetic scenarios for experimentation and demonstration**, not evi
 
 The live Isolation Forest pipeline has **not yet been evaluated on an independent, labeled benchmark dataset**. The dashboard and session reports therefore do not display accuracy, false-positive rate, or confidence percentages. The detector reports anomaly scores and decisions only.
 
-The historical comparison plots below belong to a separate synthetic experiment and are not a benchmark of the live Isolation Forest pipeline. They must not be interpreted as real-world performance evidence.
-
-<img width="750" height="600" alt="AI-IDS confusion matrix" src="https://github.com/user-attachments/assets/8c470c99-1575-42b6-975b-bc4bdb71de18" />
-
-<img width="1800" height="900" alt="AI-IDS model comparison" src="https://github.com/user-attachments/assets/a831e35f-278d-4c51-911e-bf5d3ec54519" />
+Earlier synthetic comparison charts and confusion matrices have been removed from the primary project README because they do not evaluate the live Isolation Forest pipeline on independent data. They may be restored in a clearly separated research appendix only if their dataset generation, split, labels, and exact evaluated model are documented and reproducible.
 
 > **Important:** Synthetic demonstrations are useful for exercising software paths, but do not establish generalization to real network traffic.
 
