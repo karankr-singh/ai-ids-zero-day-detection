@@ -29,16 +29,11 @@ python -m pip install -r requirements.txt
 
 ## 3. Run the benchmark
 
-\`\`\`bash
-python -m evaluation.run_unsw_nb15 ^
-  --train-csv datasets/unsw_nb15/UNSW_NB15_training-set.csv ^
-  --test-csv datasets/unsw_nb15/UNSW_NB15_testing-set.csv ^
-  --output-dir results/unsw_nb15
-\`\`\`
+```bash
+python -m evaluation.run_unsw_nb15 --train-csv datasets/unsw_nb15/UNSW_NB15_training-set.csv --test-csv datasets/unsw_nb15/UNSW_NB15_testing-set.csv --output-dir results/unsw_nb15
+```
 
-On Linux/macOS, replace the PowerShell continuation character \`^\` with
-\`\\\`.
-
+The command is a single line so it works in Windows PowerShell, Command Prompt, Linux, and macOS.
 Optional controls:
 
 - \`--seed 42\`: deterministic normal-row split and model seed.
