@@ -158,11 +158,12 @@ class AnomalyDetector:
             if is_anomaly else "No response proposed"
         )
 
-        self._stats["total_analyzed"] += 1
-        if is_anomaly:
-            self._stats["total_anomalies"] += 1
-        proto = pkt.get("protocol", "UNKNOWN")
-        self._stats["by_protocol"][proto] = self._stats["by_protocol"].get(proto, 0) + 1
+        with self._model_lock:
+            self._stats["total_analyzed"] += 1
+            if is_anomaly:
+                self._stats["total_anomalies"] += 1
+            proto = pkt.get("protocol", "UNKNOWN")
+            self._stats["by_protocol"][proto] = self._stats["by_protocol"].get(proto, 0) + 1
 
         return {
             "is_anomaly": is_anomaly,
@@ -210,7 +211,8 @@ class AnomalyDetector:
 
     @property
     def stats(self) -> dict:
-        return {
-            **self._stats,
-            "by_protocol": dict(self._stats["by_protocol"]),
-        }
+        with self._model_lock:
+            return {
+                **self._stats,
+                "by_protocol": dict(self._stats["by_protocol"]),
+            }
