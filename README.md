@@ -329,3 +329,10 @@ The two repositories explore the same broader problem from different angles:
 
 ---
 
+
+
+## 🔬 UNSW-NB15 benchmark evaluation
+
+A separate, reproducible Isolation Forest benchmark pipeline is available under [`evaluation/`](evaluation/). It trains only on normal-labeled records from the official training split, reserves normal-only records for threshold calibration, and evaluates once on the official held-out test split. It reports ROC-AUC, precision, recall, F1, precision@K, confusion matrix, FPR/FNR, per-attack-category recall, dataset hashes, split sizes, and environment details. It does not alter the live simulator detector.
+
+See [`evaluation/README.md`](evaluation/README.md) for dataset acquisition and run instructions. No benchmark performance numbers are claimed until the real labeled dataset has been downloaded and the pipeline has completed successfully.
