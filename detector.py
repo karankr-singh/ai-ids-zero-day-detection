@@ -1,5 +1,6 @@
 import random
 import time
+import threading
 from collections import deque
 
 import numpy as np
@@ -36,6 +37,7 @@ class AnomalyDetector:
         self.model = self._new_model()
         self.scaler = StandardScaler()
         self._trusted_normal_buf = deque(maxlen=5000)
+        self._model_lock = threading.RLock()
         self._is_trained = False
         self._stats = {
             "total_analyzed": 0,
@@ -94,6 +96,10 @@ class AnomalyDetector:
 
     def _fit_on_trusted_normals(self):
         """Fit candidate preprocessing/model objects before swapping them in."""
+        with self._model_lock:
+            return self._fit_locked()
+
+    def _fit_locked(self):
         X = np.asarray(self._trusted_normal_buf, dtype=float)
         if len(X) < 2:
             return False
@@ -118,8 +124,9 @@ class AnomalyDetector:
         """
         if not confirmed:
             return False
-        self._trusted_normal_buf.append(self._extract_features(pkt))
-        self._stats["trusted_normal_samples"] = len(self._trusted_normal_buf)
+        with self._model_lock:
+            self._trusted_normal_buf.append(self._extract_features(pkt))
+            self._stats["trusted_normal_samples"] = len(self._trusted_normal_buf)
         return True
 
     def analyze(self, pkt: dict) -> dict:
@@ -128,9 +135,10 @@ class AnomalyDetector:
             raise RuntimeError("Detector has not been trained")
 
         feat = self._extract_features(pkt)
-        X = self.scaler.transform([feat])
-        score = float(self.model.score_samples(X)[0])
-        pred = int(self.model.predict(X)[0])
+        with self._model_lock:
+            X = self.scaler.transform([feat])
+            score = float(self.model.score_samples(X)[0])
+            pred = int(self.model.predict(X)[0])
         is_anomaly = pred == -1
 
         severity = "NORMAL"
@@ -188,12 +196,13 @@ class AnomalyDetector:
 
     def retrain(self) -> bool:
         """Refit only on trusted-normal samples; never on detector predictions."""
-        if len(self._trusted_normal_buf) < 200:
-            return False
-        if not self._fit_on_trusted_normals():
-            return False
-        self._stats["retrain_count"] += 1
-        return True
+        with self._model_lock:
+            if len(self._trusted_normal_buf) < 200:
+                return False
+            if not self._fit_locked():
+                return False
+            self._stats["retrain_count"] += 1
+            return True
 
     @property
     def training_status(self) -> str:
