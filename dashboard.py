@@ -111,7 +111,7 @@ class Dashboard:
         self._tick_anomaly += 1
 
         # Proposed-response log
-        action_text = f"{alert.get('threat_type','?')} from {alert.get('src_ip','?')} — {alert.get('action','?')}"
+        action_text = f"{alert.get('threat_type','?')} from {alert.get('src_ip','?')} — {alert.get('proposed_response','?')}"
         self._actions.appendleft((sev, action_text, alert.get("timestamp", "")))
         self._refresh()
 
