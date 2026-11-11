@@ -73,19 +73,20 @@ class AnomalyDetector:
         ], dtype=float)
 
     def _pretrain(self):
-        """Create a synthetic normal-only baseline for the demonstration."""
+        """Create a reproducible synthetic normal-only demonstration baseline."""
+        rng = random.Random(42)
         normal = []
         for _ in range(800):
             pkt = {
-                "packet_size": max(40, random.gauss(512, 180)),
-                "inter_arrival_ms": max(0.5, random.gauss(20, 8)),
-                "dst_port": random.choice([80, 443, 22, 8080, 3306, 53]),
-                "src_port": random.randint(1024, 65535),
-                "flags": random.choice([2, 18, 16, 24]),
-                "ttl": random.randint(55, 70),
-                "payload_entropy": max(0, random.gauss(4.2, 0.6)),
-                "flow_duration_ms": max(10, random.gauss(300, 100)),
-                "bytes_per_second": max(100, random.gauss(5000, 1500)),
+                "packet_size": max(40, rng.gauss(512, 180)),
+                "inter_arrival_ms": max(0.5, rng.gauss(20, 8)),
+                "dst_port": rng.choice([80, 443, 22, 8080, 3306, 53]),
+                "src_port": rng.randint(1024, 65535),
+                "flags": rng.choice([2, 18, 16, 24]),
+                "ttl": rng.randint(55, 70),
+                "payload_entropy": max(0, rng.gauss(4.2, 0.6)),
+                "flow_duration_ms": max(10, rng.gauss(300, 100)),
+                "bytes_per_second": max(100, rng.gauss(5000, 1500)),
                 "timestamp": time.time(),
             }
             normal.append(self._extract_features(pkt))
@@ -207,7 +208,7 @@ class AnomalyDetector:
 
     @property
     def training_status(self) -> str:
-        return "synthetic baseline (not independently evaluated)" if self._is_trained else "untrained"
+        return "synthetic/simulator-labeled normals; not independently evaluated" if self._is_trained else "untrained"
 
     @property
     def stats(self) -> dict:
