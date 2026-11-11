@@ -22,7 +22,7 @@ def generate_report(alerts: list, detector, filepath: str):
         "── DETECTION STATISTICS ─────────────────────────────────",
         f"  Packets analysed  : {stats['total_analyzed']:,}",
         f"  Anomalies detected: {stats['total_anomalies']:,}",
-        f"  Detection rate    : {stats['total_anomalies'] / max(stats['total_analyzed'],1)*100:.1f}%",
+        f"  Anomaly ratio     : {stats['total_anomalies'] / max(stats['total_analyzed'],1)*100:.1f}% (not accuracy)",
         f"  Model status      : {detector.training_status}",
         f"  Trusted normal samples: {stats['trusted_normal_samples']:,}",
         f"  Retrain count     : {stats['retrain_count']:,}",
