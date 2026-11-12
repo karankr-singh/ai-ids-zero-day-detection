@@ -140,8 +140,21 @@ def run_optimization(
 
     model_results = []
     fitted = {}
+    # LOF and RBF One-Class SVM have substantially higher memory/time costs
+    # than Isolation Forest. Cap their fit subsets independently.
+    per_model_fit_caps = {
+        "isolation_forest": max_fit_samples,
+        "local_outlier_factor": min(max_fit_samples, 5000),
+        "one_class_svm": min(max_fit_samples, 5000),
+    }
     for name, estimator in _models(seed, max_fit_samples).items():
-        estimator.fit(Z_fit)
+        fit_limit = per_model_fit_caps[name]
+        if Z_fit.shape[0] > fit_limit:
+            model_rows = np.sort(rng.choice(Z_fit.shape[0], fit_limit, replace=False))
+            Z_model_fit = Z_fit[model_rows]
+        else:
+            Z_model_fit = Z_fit
+        estimator.fit(Z_model_fit)
         # sklearn novelty estimators return larger scores for more-normal rows.
         cal_scores = estimator.score_samples(Z_cal)
         val_scores = estimator.score_samples(Z_val)
@@ -160,6 +173,7 @@ def run_optimization(
         )
         model_results.append({
             "model": name,
+            "model_fit_normal_rows": int(Z_model_fit.shape[0]),
             "threshold_sweep": thresholds,
             "selected_validation_operating_point": best,
             "selection_rule": "highest training-validation F1; ties prefer recall then lower FPR",
@@ -216,6 +230,7 @@ def run_optimization(
             "seed": seed,
             "max_fit_samples": max_fit_samples,
             "max_validation_samples": max_validation_samples,
+            "per_model_fit_caps": per_model_fit_caps,
             "calibration_target_fprs": list(DEFAULT_FPRS),
             "permutation_repeats": permutation_repeats,
         },
@@ -251,20 +266,32 @@ def run_optimization(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-csv", type=Path, required=True)
+    parser.add_argument("--train-csv", type=Path)
+    parser.add_argument("--download-data", action="store_true",
+                        help="Use the checksum-verifying downloader and its corrected training-file path")
+    parser.add_argument("--data-dir", type=Path, default=Path("datasets/unsw_nb15"))
     parser.add_argument("--output-dir", type=Path, default=Path("results/unsw_nb15/optimization"))
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--validation-fraction", type=float, default=0.20)
     parser.add_argument("--max-fit-samples", type=int, default=15000)
-    parser.add_argument("--max-validation-samples", type=int, default=30000)
-    parser.add_argument("--permutation-repeats", type=int, default=3)
+    parser.add_argument("--max-validation-samples", type=int, default=12000)
+    parser.add_argument("--permutation-repeats", type=int, default=2)
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
+    if args.download_data:
+        if args.train_csv:
+            raise SystemExit("Use --download-data or --train-csv, not both.")
+        from evaluation.run_unsw_nb15 import download_dataset
+        train_csv, _ = download_dataset(args.data_dir)
+    else:
+        if not args.train_csv:
+            raise SystemExit("Provide --train-csv or use --download-data.")
+        train_csv = args.train_csv
     run_optimization(
-        args.train_csv, args.output_dir, seed=args.seed,
+        train_csv, args.output_dir, seed=args.seed,
         validation_fraction=args.validation_fraction,
         max_fit_samples=args.max_fit_samples,
         max_validation_samples=args.max_validation_samples,
