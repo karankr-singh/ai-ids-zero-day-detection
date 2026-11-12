@@ -97,6 +97,8 @@ def run_optimization(
         raise ValueError("Sample limits must be at least 100.")
     if permutation_repeats < 1:
         raise ValueError("permutation_repeats must be positive.")
+    if not 0 < max_validation_fpr <= 1:
+        raise ValueError("max_validation_fpr must be in (0, 1].")
 
     frame = load_dataset(train_path)
     labels = binary_labels(frame, "official training partition")
@@ -163,10 +165,19 @@ def run_optimization(
             threshold = float(np.quantile(cal_scores, target_fpr))
             pred = (val_scores < threshold).astype(int)
             thresholds.append(_metric_row(y_val, pred, target_fpr, threshold, name))
+        eligible = [
+            row for row in thresholds
+            if row["validation_fpr"] is not None
+            and row["validation_fpr"] <= max_validation_fpr
+        ]
+        # If distribution shift means no calibrated point meets the observed
+        # validation FPR cap, choose the lowest-FPR point and make that failure
+        # explicit in the report rather than silently relaxing the cap.
+        selection_pool = eligible or thresholds
         best = max(
-            thresholds,
+            selection_pool,
             key=lambda row: (
-                row["validation_f1"],
+                -row["validation_fpr"] if not eligible else row["validation_f1"],
                 row["validation_recall"],
                 -row["validation_fpr"],
             ),
@@ -177,7 +188,12 @@ def run_optimization(
             "validation_roc_auc": float(roc_auc_score(y_val, -val_scores)),
             "threshold_sweep": thresholds,
             "selected_validation_operating_point": best,
-            "selection_rule": "highest training-validation F1; ties prefer recall then lower FPR",
+            "selection_rule": (
+                "highest training-validation F1 among points meeting max_validation_fpr; "
+                "if none qualify, choose the lowest observed validation FPR"
+            ),
+            "max_validation_fpr": max_validation_fpr,
+            "validation_fpr_cap_met": bool(best["validation_fpr"] <= max_validation_fpr),
         })
         fitted[name] = estimator
 
@@ -234,6 +250,7 @@ def run_optimization(
             "per_model_fit_caps": per_model_fit_caps,
             "calibration_target_fprs": list(DEFAULT_FPRS),
             "permutation_repeats": permutation_repeats,
+            "max_validation_fpr": max_validation_fpr,
         },
         "model_comparison": model_results,
         "isolation_forest_feature_permutation_importance": {
@@ -277,6 +294,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-fit-samples", type=int, default=15000)
     parser.add_argument("--max-validation-samples", type=int, default=12000)
     parser.add_argument("--permutation-repeats", type=int, default=2)
+    parser.add_argument("--max-validation-fpr", type=float, default=0.10)
     return parser.parse_args()
 
 
@@ -297,4 +315,5 @@ if __name__ == "__main__":
         max_fit_samples=args.max_fit_samples,
         max_validation_samples=args.max_validation_samples,
         permutation_repeats=args.permutation_repeats,
+        max_validation_fpr=args.max_validation_fpr,
     )
