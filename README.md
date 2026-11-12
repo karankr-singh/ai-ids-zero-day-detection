@@ -223,6 +223,12 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
+Run the built-in detector tests:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
 ### Optional LLM support
 
 If Ollama is installed and configured with a compatible model, AI-IDS can use it for richer natural-language threat analysis. Otherwise, the built-in fallback engine is used.
