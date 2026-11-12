@@ -111,7 +111,7 @@ def load_dataset(path: Path) -> pd.DataFrame:
     # headerless. Other common UNSW-NB15 mirrors are comma-separated with headers.
     with path.open("r", encoding="utf-8-sig", newline="") as stream:
         first_line = stream.readline()
-    delimiter = "\\t" if "\\t" in first_line else ","
+    delimiter = chr(9) if chr(9) in first_line else ","
 
     frame = pd.read_csv(path, sep=delimiter, low_memory=False)
     frame.columns = [str(column).strip().lower() for column in frame.columns]
