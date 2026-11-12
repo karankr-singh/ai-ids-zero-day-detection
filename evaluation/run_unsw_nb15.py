@@ -138,7 +138,43 @@ def download_dataset(data_dir: Path, force: bool = False) -> tuple[Path, Path]:
             ) from last_error
 
         paths[filename] = target
-    return paths["UNSW_NB15_training-set.csv"], paths["UNSW_NB15_testing-set.csv"]
+    return _resolve_unsw_split_paths(paths)
+
+def _unsw_split_signature(path: Path) -> tuple[int, int]:
+    """Return (row_count, normal_count) for standard UNSW-NB15 split validation."""
+    frame = load_dataset(path)
+    labels = binary_labels(frame, str(path))
+    return len(frame), int(np.sum(labels == 0))
+
+
+def _resolve_unsw_split_paths(paths: dict[str, Path]) -> tuple[Path, Path]:
+    """Resolve conventional train/test roles from the published partition signatures."""
+    training_named = paths["UNSW_NB15_training-set.csv"]
+    testing_named = paths["UNSW_NB15_testing-set.csv"]
+    training_signature = _unsw_split_signature(training_named)
+    testing_signature = _unsw_split_signature(testing_named)
+    expected_training = (175341, 56000)
+    expected_testing = (82332, 37000)
+
+    if training_signature == expected_training and testing_signature == expected_testing:
+        return training_named, testing_named
+    if training_signature == expected_testing and testing_signature == expected_training:
+        print(
+            "WARNING: Zenodo filename/content mismatch detected. "
+            "Using the 175,341-row partition as training and the "
+            "82,332-row partition as testing."
+        )
+        return testing_named, training_named
+
+    raise ValueError(
+        "Downloaded files do not match the published UNSW-NB15 split "
+        "signatures. Expected training (175341 rows, 56000 normal) and "
+        "testing (82332 rows, 37000 normal), in either filename order; "
+        f"observed training-named={training_signature}, "
+        f"testing-named={testing_signature}. Refusing to benchmark "
+        "an unidentified split."
+    )
+
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
