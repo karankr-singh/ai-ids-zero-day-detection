@@ -193,7 +193,7 @@ def live_capture_loop(interface=None, bpf_filter=None,
                 key: value for key, value in row.items()
                 if key not in {"src_ip", "dst_ip"}
             }
-            baseline_file.write(json.dumps(safe_row) + "\\n")
+            baseline_file.write(json.dumps(safe_row) + "\n")
 
     # Do not retain the learning records after fitting.
     sample_count = len(learning_records)
