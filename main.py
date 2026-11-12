@@ -56,6 +56,7 @@ def _handle_record(pkt):
         "monitoring": True,
         "mode": "PASSIVE LIVE" if pkt.get("source") == "live_capture" else "SIMULATOR DEMO",
         "phase": "monitoring",
+        "by_protocol": stats["by_protocol"],
     })
 
 
@@ -255,13 +256,15 @@ def live_capture_loop(interface=None, bpf_filter=None,
         "cyan",
     )
     try:
-        sniff(
-            iface=interface,
-            filter=bpf_filter,
-            prn=on_packet,
-            store=False,
-            stop_filter=lambda _packet: not _running,
-        )
+        # A short timeout makes Ctrl+C responsive even when the interface is idle.
+        while _running:
+            sniff(
+                iface=interface,
+                filter=bpf_filter,
+                prn=on_packet,
+                store=False,
+                timeout=1,
+            )
     except PermissionError as exc:
         raise SystemExit(
             "Packet capture permission denied. Check Npcap and capture privileges."
