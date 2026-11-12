@@ -62,7 +62,7 @@ def _md5(path: Path) -> str:
     return digest.hexdigest()
 
 def download_dataset(data_dir: Path, force: bool = False) -> tuple[Path, Path]:
-    """Download the pinned UNSW-NB15 CSV split files and verify their checksums."""
+    """Download pinned UNSW-NB15 CSVs, retry transient Zenodo responses, and verify MD5."""
     data_dir.mkdir(parents=True, exist_ok=True)
     paths = {}
     for filename, expected in ZENODO_FILES.items():
@@ -71,28 +71,74 @@ def download_dataset(data_dir: Path, force: bool = False) -> tuple[Path, Path]:
             print(f"Using verified cached file: {target}")
             paths[filename] = target
             continue
-        url = f"https://zenodo.org/records/3768048/files/{filename}?download=1"
+
+        # Prefer Zenodo's current API content endpoint; retain the record-file
+        # URL as a fallback for CDN/API routing differences.
+        urls = [
+            f"https://zenodo.org/api/records/3768048/files/{filename}/content",
+            f"https://zenodo.org/records/3768048/files/{filename}?download=1",
+        ]
         temp = target.with_suffix(target.suffix + ".part")
-        request = urllib.request.Request(url, headers={"User-Agent": "AI-IDS-benchmark/1.0"})
+        request_headers = {
+            "User-Agent": "AI-IDS-benchmark/1.1",
+            "Accept": "application/octet-stream,*/*;q=0.8",
+            "Cache-Control": "no-cache",
+        }
+        last_error = None
+        verified = False
         print(f"Downloading {filename} from Zenodo...")
-        try:
-            with urllib.request.urlopen(request, timeout=90) as response, temp.open("wb") as output:
-                while True:
-                    chunk = response.read(1024 * 1024)
-                    if not chunk:
-                        break
-                    output.write(chunk)
-            actual = _md5(temp)
-            if actual != expected:
-                raise ValueError(f"Checksum mismatch for {filename}: expected {expected}, got {actual}")
-            temp.replace(target)
-        except Exception:
-            temp.unlink(missing_ok=True)
-            raise
-        print(f"Downloaded and verified: {target}")
+
+        # Retry each canonical endpoint. A checksum mismatch can be a transient
+        # CDN/error-page response; never accept it or update the pinned hash.
+        for url in urls:
+            for attempt in range(1, 4):
+                temp.unlink(missing_ok=True)
+                request = urllib.request.Request(url, headers=request_headers)
+                try:
+                    with urllib.request.urlopen(request, timeout=120) as response:
+                        content_type = response.headers.get("Content-Type", "unknown")
+                        with temp.open("wb") as output:
+                            while True:
+                                chunk = response.read(1024 * 1024)
+                                if not chunk:
+                                    break
+                                output.write(chunk)
+
+                    byte_count = temp.stat().st_size
+                    actual = _md5(temp)
+                    if byte_count < 1_000_000:
+                        raise ValueError(
+                            f"Suspiciously small response ({byte_count} bytes, "
+                            f"Content-Type: {content_type})"
+                        )
+                    if actual != expected:
+                        raise ValueError(
+                            f"MD5 mismatch (expected {expected}, got {actual}; "
+                            f"{byte_count} bytes; Content-Type: {content_type})"
+                        )
+
+                    temp.replace(target)
+                    verified = True
+                    print(f"Downloaded and verified: {target} ({byte_count:,} bytes)")
+                    break
+                except Exception as exc:
+                    last_error = exc
+                    temp.unlink(missing_ok=True)
+                    print(
+                        f"Download attempt {attempt}/3 failed for {filename}: {exc}"
+                    )
+            if verified:
+                break
+
+        if not verified:
+            raise RuntimeError(
+                f"Could not download a checksum-verified copy of {filename} "
+                f"from Zenodo after retries. The expected MD5 remains {expected}. "
+                f"Last error: {last_error}. No unverified file was retained."
+            ) from last_error
+
         paths[filename] = target
     return paths["UNSW_NB15_training-set.csv"], paths["UNSW_NB15_testing-set.csv"]
-
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
