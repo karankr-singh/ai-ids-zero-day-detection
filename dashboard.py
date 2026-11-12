@@ -174,7 +174,7 @@ class Dashboard:
             Layout(name="sidebar", ratio=2),
         )
         root["sidebar"].split_column(
-            Layout(name="scenario", ratio=2),
+            Layout(name="scenario", size=4),
             Layout(name="traffic", ratio=3),
             Layout(name="severity", ratio=2),
             Layout(name="protocols", ratio=2),
@@ -282,27 +282,42 @@ class Dashboard:
         status = scenario.get("status", "STANDBY")
         if status == "RUNNING":
             status_colour = "bright_yellow"
+            border_colour = "bright_yellow"
         elif status == "COMPLETE":
             status_colour = "bright_green"
+            border_colour = "bright_green"
         else:
             status_colour = "grey50"
+            border_colour = "grey23"
+
+        generated = int(scenario.get("generated", 0))
+        target = int(scenario.get("target", 0))
+        candidates = int(scenario.get("candidates", 0))
+        progress = min(1.0, generated / target) if target > 0 else 0.0
+        filled = round(progress * 8)
+        progress_bar = f"[bright_cyan]{'━' * filled}[/][grey23]{'─' * (8 - filled)}[/]"
 
         content = Text()
-        content.append("SCENARIO  ", style="grey62")
-        content.append(str(scenario.get("label", "No active scenario")), style="bold bright_cyan")
-        content.append("\n")
-        content.append("STATUS     ", style="grey62")
+        label = str(scenario.get("label", "No active scenario"))
+        content.append(label[:22], style="bold bright_cyan")
+        content.append("  |  ")
         content.append(status, style=f"bold {status_colour}")
         content.append("\n")
-        content.append("GENERATED  ", style="grey62")
-        content.append(f"{scenario.get('generated', 0)}/{scenario.get('target', 0)}", style="bright_white")
-        content.append("    CANDIDATES  ", style="grey62")
-        content.append(str(scenario.get("candidates", 0)), style="bright_yellow")
-        content.append("\n")
-        content.append(str(scenario.get("description", "")), style="grey70")
-        content.append("\n\n")
-        content.append("Synthetic scenario only · candidates are not validated detections.", style="italic grey50")
-        return Panel(content, title="[bold bright_cyan]ATTACK SCENARIO[/]", border_style="grey23", padding=(0, 1))
+        if target:
+            content.append(f"RECORDS {generated}/{target}", style="bright_white")
+            content.append("  ")
+            content.append(f"CANDIDATES {candidates}", style="bright_yellow")
+            content.append("  ")
+            content.append(progress_bar)
+        else:
+            content.append("Awaiting a scripted scenario", style="grey50")
+
+        return Panel(
+            content,
+            title="[bold bright_cyan]ATTACK SCENARIO · SYNTHETIC[/]",
+            border_style=border_colour,
+            padding=(0, 1),
+        )
 
     # Traffic overview
     def _render_traffic(self) -> Panel:
