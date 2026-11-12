@@ -52,6 +52,8 @@ def _handle_record(pkt):
         "alerts": stats["total_anomalies"],
         "training_status": detector.training_status,
         "monitoring": True,
+        "mode": "PASSIVE LIVE" if pkt.get("source") == "live_capture" else "SIMULATOR DEMO",
+        "phase": "monitoring",
     })
 
 
@@ -127,6 +129,8 @@ def live_capture_loop(interface=None, bpf_filter=None,
     dash.update_stats({
         "training_status": "collecting operator-designated normal traffic",
         "monitoring": False,
+        "mode": "PASSIVE LIVE",
+        "phase": "learning",
     })
 
     def collect_packet(packet):
@@ -213,6 +217,8 @@ def live_capture_loop(interface=None, bpf_filter=None,
         "alerts": 0,
         "training_status": detector.training_status,
         "monitoring": True,
+        "mode": "PASSIVE LIVE",
+        "phase": "monitoring",
     })
 
     def on_packet(packet):
@@ -324,6 +330,10 @@ def main():
         parser.error("--demo and --attack are simulator-only; use --mode simulator")
 
     dash = Dashboard()
+    dash.update_stats({
+        "mode": "SIMULATOR DEMO" if args.mode == "simulator" else "PASSIVE LIVE",
+        "phase": "standby",
+    })
     dash.log_system(f"LLM backend: {llm.backend}", "cyan")
     dash.log_system(f"Mode: {'PASSIVE LIVE CAPTURE' if args.mode == 'live' else 'SIMULATOR'}", "cyan")
 
