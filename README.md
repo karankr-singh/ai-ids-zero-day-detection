@@ -272,11 +272,15 @@ Live mode is **passive**: it does not inject, block, or modify packets. It extra
 
 **Live learning workflow:** live mode starts with a fresh, untrained detector (no synthetic fallback). It passively collects packet metadata for the `--learn-seconds` quiet-window duration (default 30 seconds), requires at least `--min-training-samples` records (default 200), trains on 80% of that window, and calibrates the anomaly-score threshold on the held-out 20%. Keep the network as quiet and representative as possible during learning; avoid downloads, streaming, scans, and other unusual activity. The application cannot prove that this window is attack-free, and the calibration tail is not an independent false-positive-rate measurement. Live anomalies are therefore unclassified, low-priority candidates for review—not confirmed attacks. If the sample minimum is not met, live monitoring does not start and the app does not fall back to the synthetic model. The Scapy adapter maintains lightweight per-5-tuple counters; it is not yet a validated bidirectional flow engine.
 
-### Demonstration mode
+### Video demonstration (recommended)
+
+Run a repeatable 32-second sequence showing Port Scan, DDoS Flood, Data Exfiltration, and Brute Force. Each scenario generates 12 synthetic records; the dashboard shows the active scenario, progress, and anomaly-candidate count.
 
 ```bash
-python main.py --demo
+python main.py --mode simulator --demo --demo-duration 32 --demo-count 12 --speed 8
 ```
+
+The run is synthetic and demonstrates the application pipeline; it is not proof of real-world attack detection. Press Ctrl+C to stop early.
 
 ### Simulate a specific scenario
 
