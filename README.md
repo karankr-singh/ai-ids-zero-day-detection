@@ -54,7 +54,8 @@ The important distinction is that **“zero-day capable” here means anomaly-ba
 
 The project includes a terminal-based monitoring interface showing packet counts, alerts, anomaly information, severity distribution, protocol activity, and system status.
 
-<img width="996" height="293" alt="AI-IDS live terminal dashboard" src="https://github.com/user-attachments/assets/048c3640-1aad-4bd6-86d9-c6148e4c600c" />
+<img width="1012" height="571" alt="f485c2b5-3ef7-48fc-9cac-8bbc8b718bdb" src="https://github.com/user-attachments/assets/5692163b-fe1c-4368-9106-eb585b9292a0" />
+
 
 ---
 
