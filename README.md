@@ -280,7 +280,7 @@ Run a repeatable 32-second sequence showing Port Scan, DDoS Flood, Data Exfiltra
 python main.py --mode simulator --demo --demo-duration 32 --demo-count 12 --speed 8
 ```
 
-The run is synthetic and demonstrates the application pipeline; it is not proof of real-world attack detection. Press Ctrl+C to stop early.
+The run is synthetic and demonstrates the application pipeline; it is not proof of real-world attack detection. Press Ctrl+C to stop early. See [VIDEO_DEMO.md](VIDEO_DEMO.md) for the recording setup, suggested narration, and integrity checklist.
 
 ### Simulate a specific scenario
 
