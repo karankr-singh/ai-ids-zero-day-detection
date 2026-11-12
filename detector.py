@@ -182,8 +182,10 @@ class AnomalyDetector:
         inter = pkt.get("inter_arrival_ms", 20)
         flags = pkt.get("flags", 2)
 
-        if flags == 0:
-            return "NULL / Malformed Packet"
+        # UDP and non-TCP IP packets do not have TCP flags; zero is normal there.
+        # A TCP packet with no flags can indicate a NULL scan, not a malformed packet.
+        if pkt.get("protocol") == "TCP" and flags == 0:
+            return "TCP NULL-flag Packet (heuristic)"
         if inter < 5 and port > 1024:
             return "Port Scan"
         if inter < 3 and size < 120:
