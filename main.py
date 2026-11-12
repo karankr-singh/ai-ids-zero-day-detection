@@ -1,4 +1,6 @@
 import argparse
+import json
+from pathlib import Path
 import signal
 import time
 import threading
@@ -180,6 +182,18 @@ def live_capture_loop(interface=None, bpf_filter=None,
         )
     except (ValueError, FloatingPointError) as exc:
         raise SystemExit(f"Could not calibrate live baseline: {exc}") from exc
+
+    # Persist feature-only baseline for repeatable local benchmarking.
+    # Private IP addresses and packet payload bytes are deliberately excluded.
+    baseline_path = Path("logs/live_baseline.jsonl")
+    baseline_path.parent.mkdir(parents=True, exist_ok=True)
+    with baseline_path.open("w", encoding="utf-8") as baseline_file:
+        for row in learning_records:
+            safe_row = {
+                key: value for key, value in row.items()
+                if key not in {"src_ip", "dst_ip"}
+            }
+            baseline_file.write(json.dumps(safe_row) + "\\n")
 
     # Do not retain the learning records after fitting.
     sample_count = len(learning_records)
