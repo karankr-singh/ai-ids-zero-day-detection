@@ -27,3 +27,11 @@ def test_validation_fraction_is_validated(tmp_path):
     from evaluation.optimize_unsw_nb15 import run_optimization
     with pytest.raises(ValueError):
         run_optimization(tmp_path / "missing.csv", tmp_path, validation_fraction=0.5)
+
+
+def test_validation_fpr_cap_must_be_between_zero_and_one(tmp_path):
+    from evaluation.optimize_unsw_nb15 import run_optimization
+    with pytest.raises(ValueError, match="max_validation_fpr"):
+        run_optimization(
+            tmp_path / "missing.csv", tmp_path, max_validation_fpr=0.0
+        )
