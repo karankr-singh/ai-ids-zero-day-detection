@@ -5,19 +5,15 @@ packet simulator or the current 10-feature detector.
 
 ## 1. Obtain the dataset
 
-Use the UNSW Canberra Cyber official UNSW-NB15 dataset page:
+The runner can download the labeled train/test CSV files automatically from
+the Zenodo record that hosts the UNSW-NB15 split files. The downloaded files
+are cached locally and checked against the record's published MD5 checksums.
+The original dataset is attributed to UNSW-NB15; see the
+[official UNSW dataset page](https://research.unsw.edu.au/projects/unsw-nb15-dataset)
+and [Zenodo record 3768048](https://zenodo.org/records/3768048).
 
-https://research.unsw.edu.au/projects/unsw-nb15-dataset
-
-Download the labeled CSV training and testing files (commonly named
-\`UNSW_NB15_training-set.csv\` and \`UNSW_NB15_testing-set.csv\`). Keep the
-original files unchanged and place them in a local directory such as
-\`datasets/unsw_nb15/\`. Do not commit the dataset to Git.
-
-The runner expects both CSVs to contain a numeric binary \`label\` column
-(0 = normal, 1 = attack). The optional \`attack_cat\` column is used only for
-per-category reporting. It accepts the labeled CSV format, not the raw
-feature files without labels.
+No manual browser download is required. Dataset files remain local and should
+not be committed to Git.
 
 ## 2. Install dependencies
 
@@ -30,10 +26,17 @@ python -m pip install -r requirements.txt
 ## 3. Run the benchmark
 
 ```bash
-python -m evaluation.run_unsw_nb15 --train-csv datasets/unsw_nb15/UNSW_NB15_training-set.csv --test-csv datasets/unsw_nb15/UNSW_NB15_testing-set.csv --output-dir results/unsw_nb15
+python -m evaluation.run_unsw_nb15 --download-data --output-dir results/unsw_nb15
 ```
 
 The command is a single line so it works in Windows PowerShell, Command Prompt, Linux, and macOS.
+The first run downloads approximately 48 MB of CSV data into
+`datasets/unsw_nb15/`; later runs reuse the cached files after checksum
+verification. Add `--force-download` to fetch fresh copies.
+
+For an already-downloaded dataset, the explicit `--train-csv` and
+`--test-csv` arguments remain supported.
+
 Optional controls:
 
 - \`--seed 42\`: deterministic normal-row split and model seed.
