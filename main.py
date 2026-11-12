@@ -34,6 +34,8 @@ def _handle_record(pkt):
     """Run one simulator or live-capture record through the common pipeline."""
     global _alert_id
     result = detector.analyze(pkt)
+    if pkt.get("pkt_type") in ATTACK_PROFILES:
+        dash.record_scenario_record(pkt, result["is_anomaly"])
     if result["is_anomaly"]:
         _alert_id += 1
         analysis = llm.analyze(pkt, result) if pkt.get("source") != "live_capture" else (
@@ -73,14 +75,25 @@ def inject_attack(attack_key, count=15, delay=2.0):
     time.sleep(delay)
     if not _running:
         return
+    profile = ATTACK_PROFILES[attack_key]
+    dash.update_scenario({
+        "status": "RUNNING",
+        "key": attack_key,
+        "label": profile["label"],
+        "description": profile["description"],
+        "target": count,
+        "generated": 0,
+        "candidates": 0,
+    })
     dash.log_system(
-        f"Injecting simulated attack: {attack_key.upper()} ({count} records)",
+        f"Starting simulated scenario: {profile['label']} ({count} records)",
         "yellow",
     )
     for pkt in simulator.inject_attack(attack_key, count):
         _handle_record(pkt)
         time.sleep(0.05)
-    dash.log_system("Simulated attack injection complete", "green")
+    dash.update_scenario({"status": "COMPLETE"})
+    dash.log_system(f"Scenario complete: {profile['label']}", "green")
 
 
 def demo_mode(duration=45):
