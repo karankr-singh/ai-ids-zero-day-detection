@@ -190,8 +190,8 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap}
   <section id="status"><div class="wrap">
     <h2 class="rv">Evaluation status</h2>
     <div class="callout rv">
-      <p><strong>The live Isolation Forest pipeline has not been evaluated on an independent, labeled benchmark dataset.</strong> For that reason this page, the dashboard, and the session reports show no accuracy, F1, or false-positive figures.</p>
-      <p>A separate UNSW-NB15 evaluation runner is now available under <code>evaluation/</code>. It fits only on normal-labeled training rows, calibrates on a normal-only validation subset, and reserves the official test split for final evaluation. No performance figures are claimed until that run is completed and its JSON report is reviewed.</p>
+      <p><strong>Live detector: not yet evaluated on an independent, labeled benchmark dataset.</strong> The dashboard and live session reports therefore make no accuracy, F1, or false-positive-rate claims.</p>
+      <p><strong>Benchmark harness: available; results not yet produced or reviewed.</strong> The separate UNSW-NB15 runner in <code>evaluation/</code> fits on normal-labeled training rows, calibrates on a normal-only validation subset, and reserves the official test split for final evaluation. This offline harness does not train or validate the live detector. No performance figures are claimed until the benchmark run completes and its JSON report is reviewed.</p>
     </div>
   </div></section>
 
@@ -200,7 +200,8 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap}
     <ul class="plain rv">
       <li>The browser experience is simulated. The Python application also supports passive IPv4 TCP/UDP metadata capture on an authorized interface through Scapy.</li>
       <li>"Zero-day capable" means anomaly scoring can flag unseen patterns. It does not guarantee detection of real zero-day attacks.</li>
-      <li>Simulator mode uses the Isolation Forest default offset; live mode calibrates a score threshold from a held-out portion of an operator-designated quiet window. Neither threshold is a calibrated attack probability, and the live learning window is not independently verified as attack-free.</li>
+      <li>Live mode starts with a fresh, untrained detector and learns from an operator-designated quiet window; it does not use the simulator's synthetic baseline. The quiet window is not independently verified as attack-free, and its held-out calibration tail is not an independent false-positive-rate measurement.</li>
+      <li>The separate UNSW-NB15 benchmark harness is available, but benchmark results have not yet been produced and reviewed; it does not validate the live detector.</li>
       <li>Responses are proposals only. The application does not block IPs, isolate segments, or change firewall rules.</li>
       <li>Retraining uses only samples explicitly marked as trusted-normal, and its effect on detection quality has not been measured.</li>
     </ul>
