@@ -171,7 +171,7 @@ These are **synthetic scenarios for experimentation and demonstration**, not evi
 
 **Live detector:** The live Isolation Forest pipeline has **not yet been evaluated on an independent, labeled benchmark dataset**. The dashboard and live session reports therefore do not claim accuracy, F1, or false-positive rate.
 
-**Benchmark harness:** A separate, reproducible UNSW-NB15 evaluation pipeline is available in [`evaluation/`](evaluation/README.md). It is designed to train and calibrate in the offline benchmark workflow and evaluate against the official labeled test split. **Benchmark results have not yet been produced and reviewed**, so no performance metrics are claimed here. The benchmark harness does not train or validate the live detector.
+**Benchmark harness:** A separate, reproducible UNSW-NB15 evaluation pipeline is available in [`evaluation/`](evaluation/README.md). It can automatically download and checksum-verify the labeled UNSW-NB15 train/test CSVs, cache them locally, then train and calibrate in the offline benchmark workflow and evaluate against the official labeled test split. Run `python -m evaluation.run_unsw_nb15 --download-data`. **Benchmark results have not yet been produced and reviewed**, so no performance metrics are claimed here. The benchmark harness does not train or validate the live detector.
 
 Earlier synthetic comparison charts and confusion matrices remain excluded because they do not independently evaluate the live pipeline.
 
