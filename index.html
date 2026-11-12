@@ -115,7 +115,7 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap}
   <div class="hero" id="hero"><div class="wrap grid">
     <div>
       <h1 id="h1" aria-label="Flag unusual traffic without a signature list.">Flag unusual traffic without a signature list.</h1>
-      <p class="lede" style="margin-top:20px">AI-IDS is a local Python prototype. It scores simulated network traffic with an unsupervised Isolation Forest, explains each alert in plain language, and shows it all in a live terminal dashboard.</p>
+      <p class="lede" style="margin-top:20px">AI-IDS is a local Python prototype with two traffic paths: repeatable synthetic attack simulations and optional passive capture of authorized IPv4 TCP/UDP packet metadata. An unsupervised Isolation Forest scores records and a Rich terminal dashboard presents review candidates.</p>
       <div class="btns">
         <a class="btn primary" href="#demo">Try it in your browser</a>
         <a class="btn" href="https://github.com/karankr-singh/ai-ids-zero-day-detection">View the code</a>
@@ -132,7 +132,7 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap}
 
   <section id="demo"><div class="wrap">
     <h2 class="rv">Break it yourself</h2>
-    <p class="lede rv">A simplified Isolation Forest runs right here in your browser on three made-up traffic features. Inject an attack and watch what it catches, what it misses, and what it flags by mistake.</p>
+    <p class="lede rv">This interactive browser toy uses three made-up traffic features and a separate illustrative scoring model. Inject synthetic patterns to explore the trade-off between detections and false alarms; it is not connected to the Python detector.</p>
     <div class="demo rv">
       <div class="stage">
         <div class="cv"><canvas id="cv" aria-label="Scatter plot of simulated packets. Red rings mark packets flagged as anomalous."></canvas>
@@ -158,7 +158,7 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap}
     <h2 class="rv">What the Python project does</h2>
     <div class="cols">
       <div class="card rv"><h3>Learns what normal looks like</h3><p>An Isolation Forest (150 estimators) is fit on a normal-only baseline and scores new records by how easily they are isolated. No attack labels are used.</p></div>
-      <div class="card rv"><h3>Explains alerts</h3><p>Anomalies can be passed to a local Ollama model for a readable summary. Without Ollama, a built-in rule engine produces deterministic explanations.</p></div>
+      <div class="card rv"><h3>Explains alerts</h3><p>In simulator mode, anomalies can be passed to a local Ollama model or a deterministic rule-based fallback. Live-capture outliers remain unclassified review candidates and are not sent for attack attribution.</p></div>
       <div class="card rv"><h3>Simulates six attack types</h3><p>A traffic simulator mixes normal HTTP, HTTPS, SSH, and DNS records with six synthetic attack profiles so you can exercise the whole pipeline.</p></div>
       <div class="card rv"><h3>Shows everything live</h3><p>A full-screen Rich dashboard displays packet counts, the alert feed, severity distribution, and protocol activity. Alerts and a session report are saved to disk.</p></div>
     </div>
@@ -191,16 +191,16 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap}
     <h2 class="rv">Evaluation status</h2>
     <div class="callout rv">
       <p><strong>The live Isolation Forest pipeline has not been evaluated on an independent, labeled benchmark dataset.</strong> For that reason this page, the dashboard, and the session reports show no accuracy, F1, or false-positive figures.</p>
-      <p>The next step is to score the detector on a labeled dataset such as UNSW-NB15, then publish the code, splits, and results together, including recall and false-positive rate.</p>
+      <p>A separate UNSW-NB15 evaluation runner is now available under <code>evaluation/</code>. It fits only on normal-labeled training rows, calibrates on a normal-only validation subset, and reserves the official test split for final evaluation. No performance figures are claimed until that run is completed and its JSON report is reviewed.</p>
     </div>
   </div></section>
 
   <section id="limits"><div class="wrap">
     <h2 class="rv">Limitations</h2>
     <ul class="plain rv">
-      <li>It runs on simulated packet-like records. It does not capture live network traffic.</li>
+      <li>The browser experience is simulated. The Python application also supports passive IPv4 TCP/UDP metadata capture on an authorized interface through Scapy.</li>
       <li>"Zero-day capable" means anomaly scoring can flag unseen patterns. It does not guarantee detection of real zero-day attacks.</li>
-      <li>The threshold uses scikit-learn's <code>contamination="auto"</code>, a default that has not been validated on representative data.</li>
+      <li>Simulator mode uses the Isolation Forest default offset; live mode calibrates a score threshold from a held-out portion of an operator-designated quiet window. Neither threshold is a calibrated attack probability, and the live learning window is not independently verified as attack-free.</li>
       <li>Responses are proposals only. The application does not block IPs, isolate segments, or change firewall rules.</li>
       <li>Retraining uses only samples explicitly marked as trusted-normal, and its effect on detection quality has not been measured.</li>
     </ul>
@@ -246,7 +246,7 @@ typeScenario();
 /* ---- pipeline tabs ---- */
 var ST=[['Simulate','simulator.py','Generates normal HTTP, HTTPS, SSH, and DNS records alongside six synthetic attack profiles at an adjustable speed. Everything downstream sees packet-like records, never real network traffic.'],
 ['Extract','detector.py','Turns each record into a 10-dimensional feature vector (packet size, inter-arrival time, ports, TCP flags, TTL, payload entropy, duration, bytes per second, hour of day) and scales it. Features are per record, not aggregated into sessions.'],
-['Score','detector.py','An Isolation Forest with 150 estimators gives each record an anomaly score. Records that are easy to isolate from the normal baseline score as more anomalous. The cutoff is scikit-learn\u2019s contamination="auto" default.'],
+['Score','detector.py','An Isolation Forest with 150 estimators gives each record an anomaly score. Simulator mode uses the estimator default offset; live mode calibrates a cutoff on a held-out portion of the operator-designated learning window. Neither score is a probability.'],
 ['Explain','llm_engine.py','Anomalies go to a local Ollama model for a plain-language summary. If Ollama is not available, a deterministic rule engine writes the explanation instead.'],
 ['Report','dashboard.py, logger.py, report.py','Scores map to four heuristic severity bands for triage. The Rich dashboard shows them live, alerts are saved to alerts.json, and a session report is written when you press Ctrl+C. Responses are proposals only.']];
 var sb=$('steps');
