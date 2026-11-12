@@ -13,13 +13,14 @@ dependencies = [
     "numpy>=1.26.0",
     "pandas>=2.0.0",
     "rich>=13.7.0",
+    "scapy>=2.5.0",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0.0"]
 
 [tool.setuptools]
-py-modules = ["simulator", "main", "report", "dashboard", "detector", "logger", "llm_engine"]
+py-modules = ["simulator", "main", "report", "dashboard", "detector", "logger", "llm_engine", "live_capture", "response"]
 packages = ["evaluation"]
 
 [tool.pytest.ini_options]
