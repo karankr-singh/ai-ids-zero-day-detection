@@ -9,6 +9,8 @@ python -m evaluation.optimize_unsw_nb15 --download-data
 
 The `--download-data` option reuses the checksum-verified downloader and automatically selects the corrected 175,341-row training partition even when Zenodo's filenames are reversed. To use an existing file instead, pass its verified training path with `--train-csv`.
 
+The experiment defaults to a maximum observed validation FPR of 10%; among threshold points meeting that cap it selects the highest F1. If none meet the cap, it reports that explicitly and falls back to the lowest-FPR point. Override with `--max-validation-fpr`.
+
 The experiment:
 - fits preprocessing and models on normal-labeled training rows only;
 - calibrates thresholds on a disjoint normal-only subset;
