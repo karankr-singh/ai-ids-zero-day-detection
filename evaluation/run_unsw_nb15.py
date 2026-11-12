@@ -36,6 +36,17 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 LABEL_COLUMN = "label"
 CATEGORY_COLUMN = "attack_cat"
 DROP_COLUMNS = {"id", "attack_cat", "label"}
+
+# Official 45-column UNSW-NB15 schema, used by headerless tab-separated exports.
+UNSW_NB15_COLUMNS = [
+    "id", "dur", "proto", "service", "state", "spkts", "dpkts", "sbytes", "dbytes",
+    "rate", "sttl", "dttl", "sload", "dload", "sloss", "dloss", "sinpkt", "dinpkt",
+    "sjit", "djit", "swin", "stcpb", "dtcpb", "dwin", "tcprtt", "synack", "ackdat",
+    "smean", "dmean", "trans_depth", "response_body_len", "ct_srv_src", "ct_state_ttl",
+    "ct_dst_ltm", "ct_src_dport_ltm", "ct_dst_sport_ltm", "ct_dst_src_ltm",
+    "is_ftp_login", "ct_ftp_cmd", "ct_flw_http_mthd", "ct_src_ltm", "ct_srv_dst",
+    "is_sm_ips_ports", "attack_cat", "label",
+]
 DEFAULT_SEED = 42
 
 ZENODO_FILES = {
@@ -92,17 +103,34 @@ def sha256_file(path: Path) -> str:
 
 
 def load_dataset(path: Path) -> pd.DataFrame:
+    """Load headered CSV or headerless tab-separated official UNSW-NB15 data."""
     if not path.is_file():
         raise FileNotFoundError(f"Dataset file not found: {path}")
-    frame = pd.read_csv(path, low_memory=False)
+
+    # The Zenodo files currently used by this benchmark are tab-separated and
+    # headerless. Other common UNSW-NB15 mirrors are comma-separated with headers.
+    with path.open("r", encoding="utf-8-sig", newline="") as stream:
+        first_line = stream.readline()
+    delimiter = "\\t" if "\\t" in first_line else ","
+
+    frame = pd.read_csv(path, sep=delimiter, low_memory=False)
     frame.columns = [str(column).strip().lower() for column in frame.columns]
+
     if LABEL_COLUMN not in frame.columns:
-        raise ValueError(
-            f"{path} has no 'label' column. Expected the labeled UNSW-NB15 "
-            "CSV format (for example UNSW_NB15_training-set.csv)."
-        )
+        # Re-read without a header and apply the published 45-column schema.
+        frame = pd.read_csv(path, sep=delimiter, header=None, low_memory=False)
+        if frame.shape[1] != len(UNSW_NB15_COLUMNS):
+            raise ValueError(
+                f"{path} has no 'label' header and contains {frame.shape[1]} columns; "
+                f"expected {len(UNSW_NB15_COLUMNS)} for the headerless UNSW-NB15 format. "
+                "Check the downloaded file and its delimiter."
+            )
+        frame.columns = UNSW_NB15_COLUMNS
+
     if frame.empty:
         raise ValueError(f"Dataset file is empty: {path}")
+    if LABEL_COLUMN not in frame.columns:
+        raise ValueError(f"{path} could not be parsed into the expected UNSW-NB15 schema.")
     return frame
 
 
