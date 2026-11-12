@@ -23,8 +23,13 @@ def _entropy(payload: bytes) -> float:
 class ScapyCapture:
     """Convert observed IPv4 packets into detector-compatible records."""
 
-    def __init__(self, max_flows: int = 10000):
+    def __init__(self, max_flows: int = 10000, idle_timeout_seconds: float = 60.0):
+        if max_flows < 1:
+            raise ValueError("max_flows must be positive")
+        if idle_timeout_seconds <= 0:
+            raise ValueError("idle_timeout_seconds must be positive")
         self.max_flows = max_flows
+        self.idle_timeout_seconds = idle_timeout_seconds
         self._flows = OrderedDict()
 
     def to_record(self, packet):
@@ -55,6 +60,10 @@ class ScapyCapture:
         now = float(getattr(packet, "time", time.time()))
         key = (ip.src, ip.dst, protocol, src_port, dst_port)
         flow = self._flows.get(key)
+        if flow is not None and now - flow["last_seen"] > self.idle_timeout_seconds:
+            # Start a fresh observation window after an idle gap.
+            del self._flows[key]
+            flow = None
         if flow is None:
             flow = {"last_seen": now, "started": now, "bytes": 0}
             self._flows[key] = flow
