@@ -71,7 +71,7 @@ def simulator_loop(packets_per_second=5):
         time.sleep(interval)
 
 
-def inject_attack(attack_key, count=15, delay=2.0):
+def inject_attack(attack_key, count=15, delay=2.0, record_interval=0.12):
     time.sleep(delay)
     if not _running:
         return
@@ -91,7 +91,7 @@ def inject_attack(attack_key, count=15, delay=2.0):
     )
     for pkt in simulator.inject_attack(attack_key, count):
         _handle_record(pkt)
-        time.sleep(0.05)
+        time.sleep(record_interval)
     dash.update_scenario({"status": "COMPLETE"})
     dash.log_system(f"Scenario complete: {profile['label']}", "green")
 
