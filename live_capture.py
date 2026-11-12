@@ -21,7 +21,7 @@ def _entropy(payload: bytes) -> float:
 
 
 class ScapyCapture:
-    """Convert observed IPv4 TCP/UDP packets into detector-compatible records."""
+    """Convert observed IPv4 packets into detector-compatible records."""
 
     def __init__(self, max_flows: int = 10000):
         self.max_flows = max_flows
@@ -33,6 +33,7 @@ class ScapyCapture:
         if IP not in packet:
             return None
         ip = packet[IP]
+        transport = None
         if TCP in packet:
             transport = packet[TCP]
             protocol = "TCP"
@@ -44,7 +45,11 @@ class ScapyCapture:
             src_port, dst_port = int(transport.sport), int(transport.dport)
             flags = 0
         else:
-            protocol = str(ip.proto)
+            protocol = {
+                1: "ICMP", 2: "IGMP", 4: "IP-in-IP", 6: "TCP",
+                17: "UDP", 41: "IPv6", 47: "GRE", 50: "ESP",
+                51: "AH", 58: "ICMPv6", 89: "OSPF",
+            }.get(int(ip.proto), f"IP-{int(ip.proto)}")
             src_port = dst_port = flags = 0
 
         now = float(getattr(packet, "time", time.time()))
@@ -64,7 +69,7 @@ class ScapyCapture:
             self._flows.popitem(last=False)
 
         # Payload bytes exist only in this local calculation and are not retained.
-        payload = bytes(transport.payload) if TCP in packet or UDP in packet else b""
+        payload = bytes(transport.payload) if transport is not None else b""
         duration = max(0.0, now - flow["started"])
         return {
             "src_ip": str(ip.src), "dst_ip": str(ip.dst),
