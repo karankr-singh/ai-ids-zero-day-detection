@@ -5,6 +5,28 @@ from evaluation.run_unseen_attacks import evaluate_unseen_categories
 from response import firewall_commands, validate_block_target
 
 
+def test_zenodo_split_roles_are_resolved_by_content_not_filename(tmp_path, monkeypatch):
+    from evaluation import run_unsw_nb15
+
+    # The Zenodo "training-set" filename contains the standard test partition,
+    # and vice versa. The resolver must return the 175,341-row partition first.
+    signatures = {
+        tmp_path / "UNSW_NB15_training-set.csv": (82332, 37000),
+        tmp_path / "UNSW_NB15_testing-set.csv": (175341, 56000),
+    }
+    monkeypatch.setattr(
+        run_unsw_nb15, "_unsw_split_signature",
+        lambda path: signatures[path],
+    )
+    paths = {
+        "UNSW_NB15_training-set.csv": tmp_path / "UNSW_NB15_training-set.csv",
+        "UNSW_NB15_testing-set.csv": tmp_path / "UNSW_NB15_testing-set.csv",
+    }
+    training, testing = run_unsw_nb15._resolve_unsw_split_paths(paths)
+    assert training == paths["UNSW_NB15_testing-set.csv"]
+    assert testing == paths["UNSW_NB15_training-set.csv"]
+
+
 def test_firewall_target_rejects_private_and_loopback_addresses():
     for address in ("192.168.1.10", "127.0.0.1", "10.0.0.5", "224.0.0.1"):
         with pytest.raises(ValueError):
