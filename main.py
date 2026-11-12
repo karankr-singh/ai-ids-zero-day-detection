@@ -96,7 +96,7 @@ def demo_mode(duration=45):
 
 
 def live_capture_loop(interface=None, bpf_filter=None,
-                      learn_seconds=120, min_training_samples=200):
+                      learn_seconds=30, min_training_samples=200):
     """Learn from an operator-designated quiet window, then passively monitor."""
     try:
         from scapy.all import sniff
@@ -291,7 +291,7 @@ def main():
     parser.add_argument("--interface", help="Capture interface name for --mode live")
     parser.add_argument("--bpf-filter", help="Optional Scapy/BPF capture filter")
     parser.add_argument(
-        "--learn-seconds", type=int, default=120,
+        "--learn-seconds", type=int, default=30,
         help="Live-mode quiet baseline collection window in seconds (default: 120)",
     )
     parser.add_argument(
