@@ -308,7 +308,8 @@ class Dashboard:
             content.append("  ")
             content.append(f"CANDIDATES {candidates}", style="bright_yellow")
             content.append("  ")
-            content.append(progress_bar)
+            content.append("━" * filled, style="bright_cyan")
+            content.append("─" * (8 - filled), style="grey23")
         else:
             content.append("Awaiting a scripted scenario", style="grey50")
 
