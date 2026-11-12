@@ -174,6 +174,7 @@ def run_optimization(
         model_results.append({
             "model": name,
             "model_fit_normal_rows": int(Z_model_fit.shape[0]),
+            "validation_roc_auc": float(roc_auc_score(y_val, -val_scores)),
             "threshold_sweep": thresholds,
             "selected_validation_operating_point": best,
             "selection_rule": "highest training-validation F1; ties prefer recall then lower FPR",
