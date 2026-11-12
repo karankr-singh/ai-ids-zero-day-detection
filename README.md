@@ -1,4 +1,4 @@
-# 🛡️ AI-IDS — AI-Driven Intrusion Detection System
+# AI-IDS — AI-Driven Intrusion Detection System
 
 > A local Python IDS prototype with three separate workflows: **synthetic simulation**, **UNSW-NB15 benchmark evaluation**, and **passive live packet capture**. It combines unsupervised anomaly detection, optional LLM-assisted explanations, and a terminal dashboard.
 
@@ -35,7 +35,7 @@ The important distinction is that **“zero-day capable” here means anomaly-ba
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 | Capability | Implementation |
 |---|---|
@@ -50,7 +50,7 @@ The important distinction is that **“zero-day capable” here means anomaly-ba
 
 ---
 
-## 🎬 Live Dashboard
+##  Live Dashboard
 
 The project includes a terminal-based monitoring interface showing packet counts, alerts, anomaly information, severity distribution, protocol activity, and system status.
 
@@ -59,7 +59,7 @@ The project includes a terminal-based monitoring interface showing packet counts
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ```text
 ┌──────────────────────────┐
@@ -114,7 +114,7 @@ The project includes a terminal-based monitoring interface showing packet counts
 
 ---
 
-## 🔬 Detection Pipeline
+##  Detection Pipeline
 
 ### 1. Traffic generation
 
@@ -150,7 +150,7 @@ Detected anomalies can be passed to Ollama/Llama for human-readable analysis. Wh
 
 ---
 
-## 🎯 Simulated Attack Scenarios
+##  Simulated Attack Scenarios
 
 The current simulator includes:
 
@@ -167,7 +167,7 @@ These are **synthetic scenarios for experimentation and demonstration**, not evi
 
 ---
 
-## 📊 Evaluation status
+##  Evaluation status
 
 The live Isolation Forest pipeline has **not yet been evaluated on an independent, labeled benchmark dataset**. The dashboard and session reports therefore do not display accuracy, false-positive rate, or confidence percentages. The detector reports anomaly scores and decisions only.
 
@@ -177,7 +177,7 @@ Earlier synthetic comparison charts and confusion matrices have been removed fro
 
 ---
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 | Layer | Technology |
 |---|---|
@@ -191,7 +191,7 @@ Earlier synthetic comparison charts and confusion matrices have been removed fro
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Requirements
 
@@ -236,7 +236,7 @@ If Ollama is installed and configured with a compatible model, AI-IDS can use it
 
 ---
 
-## ▶️ Usage
+##  Usage
 
 ### 1. Synthetic simulator (default)
 
@@ -303,7 +303,7 @@ Press **Ctrl+C** to stop a simulator or live-capture session and generate the co
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```text
 ai-ids-zero-day-detection/
@@ -320,7 +320,7 @@ ai-ids-zero-day-detection/
 
 ---
 
-## 📦 Output
+##  Output
 
 A monitoring session can produce:
 
@@ -334,7 +334,7 @@ These files make it easier to inspect detections after a demonstration or experi
 
 ---
 
-## ⚠️ Scope & Limitations
+##  Scope & Limitations
 
 This repository is a **research/academic prototype**. Simulator mode uses synthetic records. Live mode passively captures IPv4 packet metadata through Scapy, but its model still uses a synthetic baseline and its per-tuple counters are not a validated flow detector. The benchmark mode is separate and evaluates on the official UNSW-NB15 labeled split.
 
@@ -356,7 +356,7 @@ The project is intended for controlled experimentation and learning.
 
 ---
 
-## 🔗 Related Research Project
+##  Related Research Project
 
 ### Transformer Zero-Day IDS
 
@@ -371,32 +371,3 @@ The two repositories explore the same broader problem from different angles:
 
 ---
 
-
-
-## 🔬 UNSW-NB15 benchmark evaluation
-
-A separate, reproducible Isolation Forest benchmark pipeline is available under [`evaluation/`](evaluation/). It trains only on normal-labeled records from the official training split, reserves normal-only records for threshold calibration, and evaluates once on the official held-out test split. It reports ROC-AUC, precision, recall, F1, precision@K, confusion matrix, FPR/FNR, per-attack-category recall, dataset hashes, split sizes, and environment details. It does not alter the live simulator detector.
-
-See [`evaluation/README.md`](evaluation/README.md) for dataset acquisition and run instructions. No benchmark performance numbers are claimed until the real labeled dataset has been downloaded and the pipeline has completed successfully.
-
-
-## 🎤 Presentation-ready demo
-
-For a short, repeatable on-stage walkthrough, use the simulator demo. It runs four scripted synthetic attack waves and displays candidate alerts in the Rich dashboard without sending traffic onto your network.
-
-```powershell
-python main.py --mode simulator --demo
-```
-
-Suggested narration:
-1. Show the traffic source and explain that this first segment is a controlled simulation.
-2. Point out the packet counter, anomaly-candidate feed, heuristic triage, protocol mix, and system log.
-3. Explain that alert labels are heuristic candidates, not confirmed incidents; proposed responses are not executed.
-4. Show the saved `logs/alerts.json` and `logs/session_report.txt` outputs.
-5. If asked about real traffic, demonstrate passive capture separately (with authorization) using `python main.py --mode live --interface "Wi-Fi"`. Live mode learns from a 30-second operator-designated quiet window and does not inject attacks.
-
-### Evaluation evidence
-
-The separate official UNSW-NB15 workflow is documented in [evaluation/README.md](evaluation/README.md). Run it before presenting numerical model-performance claims. Report the generated JSON metrics as measured; do not substitute simulator alert counts or the earlier mixed-source diagnostic for independent evaluation.
-
-See [PRESENTATION.md](PRESENTATION.md) for a timed demo script, setup checklist, and judge Q&A.
