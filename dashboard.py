@@ -295,7 +295,6 @@ class Dashboard:
         candidates = int(scenario.get("candidates", 0))
         progress = min(1.0, generated / target) if target > 0 else 0.0
         filled = round(progress * 8)
-        progress_bar = f"[bright_cyan]{'━' * filled}[/][grey23]{'─' * (8 - filled)}[/]"
 
         content = Text()
         label = str(scenario.get("label", "No active scenario"))
