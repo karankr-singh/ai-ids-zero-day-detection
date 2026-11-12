@@ -76,9 +76,9 @@ def apply_block(
         rollback = []
         for command in reversed(completed):
             if os_name == "Windows":
-                rollback.append(["netsh", "advfirewall", "firewall", "delete", "rule", f"name={command[6]}"])
+                rollback.append(["netsh", "advfirewall", "firewall", "delete", "rule", f"name={command[5]}"])
             else:
-                rollback.append(["iptables", "-D", command[1], *command[2:]])
+                rollback.append(["iptables", "-D", command[2], *command[3:]])
         for command in rollback:
             try:
                 runner(command, check=True, capture_output=True, text=True)
