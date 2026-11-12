@@ -185,7 +185,7 @@ def _print_summary():
 
 
 def main():
-    global dash
+    global dash, _running
     parser = argparse.ArgumentParser(
         description="AI-IDS: simulation, benchmark evaluation, and passive capture"
     )
@@ -231,7 +231,6 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        global _running
         _running = False
         dash.close()
         _print_summary()
