@@ -96,12 +96,17 @@ def inject_attack(attack_key, count=15, delay=2.0):
     dash.log_system(f"Scenario complete: {profile['label']}", "green")
 
 
-def demo_mode(duration=45):
-    attacks = [(8, "port_scan"), (18, "ddos"),
-               (30, "data_exfiltration"), (38, "brute_force")]
+def demo_mode(duration=32, count=12):
+    """Run a short, repeatable four-scenario sequence for screen recording."""
+    attacks = [
+        (2, "port_scan"),
+        (9, "ddos"),
+        (16, "data_exfiltration"),
+        (23, "brute_force"),
+    ]
     for delay, key in attacks:
         threading.Thread(
-            target=inject_attack, args=(key, 12, delay), daemon=True
+            target=inject_attack, args=(key, count, delay), daemon=True
         ).start()
 
     def stop_demo():
@@ -319,6 +324,14 @@ def main():
     parser.add_argument("--attack", choices=list(ATTACK_PROFILES), metavar="TYPE")
     parser.add_argument("--demo", action="store_true",
                         help="Run scripted simulator attack waves")
+    parser.add_argument(
+        "--demo-duration", type=int, default=32,
+        help="Duration of the scripted demo in seconds (default: 32)",
+    )
+    parser.add_argument(
+        "--demo-count", type=int, default=12,
+        help="Synthetic records per scripted attack scenario (default: 12)",
+    )
     parser.add_argument("--speed", type=int, default=5, metavar="N",
                         help="Simulator records per second (default: 5)")
     parser.add_argument("--interface", help="Capture interface name for --mode live")
@@ -335,6 +348,10 @@ def main():
     args = parser.parse_args()
     if args.speed < 1:
         parser.error("--speed must be at least 1")
+    if args.demo_duration < 26:
+        parser.error("--demo-duration must be at least 26 seconds to show all four scenarios")
+    if args.demo_count < 1:
+        parser.error("--demo-count must be at least 1")
     if args.learn_seconds < 1:
         parser.error("--learn-seconds must be at least 1")
     if args.min_training_samples < 100:
@@ -362,7 +379,11 @@ def main():
         )
 
     if args.mode == "simulator" and args.demo:
-        demo_mode()
+        dash.log_system(
+            f"Video demo: 4 scripted scenarios | {args.demo_count} records each | {args.demo_duration}s",
+            "cyan",
+        )
+        demo_mode(duration=args.demo_duration, count=args.demo_count)
     elif args.mode == "simulator" and args.attack:
         threading.Thread(
             target=inject_attack, args=(args.attack, 20, 3.0), daemon=True
