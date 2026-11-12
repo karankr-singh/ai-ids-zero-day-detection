@@ -101,6 +101,8 @@ class Dashboard:
     # Public update API
     def update_stats(self, stats: dict):
         self._stats.update(stats)
+        if "by_protocol" in stats:
+            self._proto_counts = dict(stats["by_protocol"])
         self._refresh()
 
     def update_scenario(self, scenario: dict):
@@ -240,16 +242,16 @@ class Dashboard:
         )
         table.add_column("TRIAGE", width=10, no_wrap=True)
         table.add_column("TIME", width=9, style="grey50", no_wrap=True)
-        table.add_column("HEURISTIC", min_width=18, ratio=2)
-        table.add_column("SOURCE → DESTINATION", min_width=22, ratio=3)
-        table.add_column("SCORE", width=8, justify="right", style="grey62")
+        table.add_column("HEURISTIC", min_width=14, ratio=2, no_wrap=True, overflow="ellipsis")
+        table.add_column("SOURCE → DESTINATION", min_width=18, ratio=3, no_wrap=True, overflow="ellipsis")
+        table.add_column("SCORE", width=8, justify="right", style="grey62", no_wrap=True)
 
         for alert in list(self._alerts)[:30]:
             severity = alert.get("severity", "LOW")
             colour = SEVERITY_COLOURS.get(severity, "white")
             table.add_row(
                 f"[{colour}]● {severity}[/]",
-                str(alert.get("timestamp", "")),
+                str(alert.get("timestamp", ""))[-8:],
                 f"[{colour}]{alert.get('threat_type', 'Unknown')}[/]",
                 (
                     f"{alert.get('src_ip', '?')} [grey50]→[/] "
@@ -321,8 +323,8 @@ class Dashboard:
 
     # Traffic overview
     def _render_traffic(self) -> Panel:
-        normal = list(self._traffic_normal)
-        anomaly = list(self._traffic_anomaly)
+        normal = list(self._traffic_normal) + [self._tick_normal]
+        anomaly = list(self._traffic_anomaly) + [self._tick_anomaly]
         normal_total = sum(normal)
         anomaly_total = sum(anomaly)
         observed = normal_total + anomaly_total
