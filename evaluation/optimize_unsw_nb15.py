@@ -88,8 +88,9 @@ def run_optimization(
     seed: int = DEFAULT_SEED,
     validation_fraction: float = 0.20,
     max_fit_samples: int = 15000,
-    max_validation_samples: int = 30000,
-    permutation_repeats: int = 3,
+    max_validation_samples: int = 12000,
+    permutation_repeats: int = 2,
+    max_validation_fpr: float = 0.10,
 ) -> dict:
     if not 0 < validation_fraction < 0.5:
         raise ValueError("validation_fraction must be between 0 and 0.5.")
