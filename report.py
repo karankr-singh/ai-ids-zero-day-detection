@@ -80,4 +80,4 @@ def generate_report(alerts: list, detector, filepath: str):
 
     lines.append("=" * 64)
 
-    path.write_text("\n".join(lines))
+    path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
