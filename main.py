@@ -50,7 +50,7 @@ def _handle_record(pkt):
     stats = detector.stats
     dash.update_stats({
         "packets": stats["total_analyzed"],
-        "alerts": len(log),
+        "alerts": stats["total_anomalies"],
         "training_status": detector.training_status,
         "monitoring": True,
     })
