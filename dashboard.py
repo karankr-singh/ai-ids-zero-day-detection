@@ -256,6 +256,10 @@ class Dashboard:
         ratio = anomaly_total / observed * 100 if observed else 0.0
 
         content = Text()
+        model_status = str(self._stats.get("training_status", "unknown"))
+        content.append("Model status  ", style="grey62")
+        content.append(model_status, style="bright_yellow")
+        content.append("\n\n")
         content.append("Observed as normal  ", style="grey62")
         content.append(spark(normal, 34), style="bright_green")
         content.append("\n")
