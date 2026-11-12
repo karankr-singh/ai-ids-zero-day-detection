@@ -75,6 +75,15 @@ class Dashboard:
             "CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0
         }
         self._proto_counts = {}
+        self._scenario = {
+            "status": "STANDBY",
+            "key": None,
+            "label": "No active scenario",
+            "description": "Start the simulator demo to display a scripted scenario.",
+            "target": 0,
+            "generated": 0,
+            "candidates": 0,
+        }
 
         self._layout = self._build_layout()
         self._live = Live(
@@ -92,6 +101,21 @@ class Dashboard:
     # Public update API
     def update_stats(self, stats: dict):
         self._stats.update(stats)
+        self._refresh()
+
+    def update_scenario(self, scenario: dict):
+        """Set the currently demonstrated synthetic attack scenario."""
+        self._scenario.update(scenario)
+        self._refresh()
+
+    def record_scenario_record(self, packet: dict, is_candidate: bool):
+        """Count generated records belonging to the active scenario."""
+        key = packet.get("pkt_type")
+        if self._scenario.get("status") != "RUNNING" or key != self._scenario.get("key"):
+            return
+        self._scenario["generated"] += 1
+        if is_candidate:
+            self._scenario["candidates"] += 1
         self._refresh()
 
     def add_alert(self, alert: dict):
@@ -150,6 +174,7 @@ class Dashboard:
             Layout(name="sidebar", ratio=2),
         )
         root["sidebar"].split_column(
+            Layout(name="scenario", ratio=2),
             Layout(name="traffic", ratio=3),
             Layout(name="severity", ratio=2),
             Layout(name="protocols", ratio=2),
@@ -164,6 +189,7 @@ class Dashboard:
         layout = self._layout
         layout["header"].update(self._render_header())
         layout["feed"].update(self._render_alerts())
+        layout["scenario"].update(self._render_scenario())
         layout["traffic"].update(self._render_traffic())
         layout["severity"].update(self._render_severity())
         layout["protocols"].update(self._render_protocols())
@@ -249,6 +275,34 @@ class Dashboard:
             border_style="grey23",
             padding=(0, 0),
         )
+
+    # Active simulator scenario
+    def _render_scenario(self) -> Panel:
+        scenario = self._scenario
+        status = scenario.get("status", "STANDBY")
+        if status == "RUNNING":
+            status_colour = "bright_yellow"
+        elif status == "COMPLETE":
+            status_colour = "bright_green"
+        else:
+            status_colour = "grey50"
+
+        content = Text()
+        content.append("SCENARIO  ", style="grey62")
+        content.append(str(scenario.get("label", "No active scenario")), style="bold bright_cyan")
+        content.append("\n")
+        content.append("STATUS     ", style="grey62")
+        content.append(status, style=f"bold {status_colour}")
+        content.append("\n")
+        content.append("GENERATED  ", style="grey62")
+        content.append(f"{scenario.get('generated', 0)}/{scenario.get('target', 0)}", style="bright_white")
+        content.append("    CANDIDATES  ", style="grey62")
+        content.append(str(scenario.get("candidates", 0)), style="bright_yellow")
+        content.append("\n")
+        content.append(str(scenario.get("description", "")), style="grey70")
+        content.append("\n\n")
+        content.append("Synthetic scenario only · candidates are not validated detections.", style="italic grey50")
+        return Panel(content, title="[bold bright_cyan]ATTACK SCENARIO[/]", border_style="grey23", padding=(0, 1))
 
     # Traffic overview
     def _render_traffic(self) -> Panel:
