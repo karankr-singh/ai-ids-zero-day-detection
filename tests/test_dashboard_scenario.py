@@ -44,6 +44,23 @@ class DashboardScenarioTests(unittest.TestCase):
         self.assertEqual(self.dashboard._scenario["generated"], 2)
         self.assertEqual(self.dashboard._scenario["candidates"], 1)
 
+
+    def test_rendered_panel_shows_progress_and_candidate_count(self):
+        self.dashboard.update_scenario({
+            "status": "COMPLETE",
+            "key": "port_scan",
+            "label": "Port Scan",
+            "target": 12,
+            "generated": 12,
+            "candidates": 9,
+        })
+        panel = self.dashboard._render_scenario()
+        rendered = panel.renderable.plain
+        self.assertIn("Port Scan", rendered)
+        self.assertIn("COMPLETE", rendered)
+        self.assertIn("RECORDS 12/12", rendered)
+        self.assertIn("CANDIDATES 9", rendered)
+
     def test_unrelated_or_completed_records_are_ignored(self):
         self.dashboard.update_scenario({
             "status": "RUNNING",
