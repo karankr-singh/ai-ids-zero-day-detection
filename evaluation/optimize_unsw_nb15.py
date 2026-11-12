@@ -178,9 +178,9 @@ def run_optimization(
         best = max(
             selection_pool,
             key=lambda row: (
-                -row["validation_fpr"] if not eligible else row["validation_f1"],
-                row["validation_recall"],
-                -row["validation_fpr"],
+                -row["validation_fpr"] if not eligible else row["validation_recall"],
+                row["validation_f1"],
+                row["validation_precision"],
             ),
         )
         model_results.append({
@@ -190,8 +190,8 @@ def run_optimization(
             "threshold_sweep": thresholds,
             "selected_validation_operating_point": best,
             "selection_rule": (
-                "highest training-validation F1 among points meeting max_validation_fpr; "
-                "if none qualify, choose the lowest observed validation FPR"
+                "highest training-validation recall among points meeting max_validation_fpr; "
+                "ties prefer F1 then precision; if none qualify, choose the lowest observed validation FPR"
             ),
             "max_validation_fpr": max_validation_fpr,
             "validation_fpr_cap_met": bool(best["validation_fpr"] <= max_validation_fpr),
