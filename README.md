@@ -1,13 +1,13 @@
 # 🛡️ AI-IDS — AI-Driven Intrusion Detection System
 
-> A local Python IDS prototype combining **unsupervised anomaly detection**, **LLM-assisted threat analysis**, attack simulation, and a live terminal dashboard.
+> A local Python IDS prototype with three separate workflows: **synthetic simulation**, **UNSW-NB15 benchmark evaluation**, and **passive live packet capture**. It combines unsupervised anomaly detection, optional LLM-assisted explanations, and a terminal dashboard.
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Scikit-learn](https://img.shields.io/badge/Scikit--learn-Isolation%20Forest-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![Rich](https://img.shields.io/badge/UI-Rich-111827?style=for-the-badge)](https://rich.readthedocs.io/)
 [![Status](https://img.shields.io/badge/Status-Active%20Development-brightgreen?style=for-the-badge)](#status)
 
-AI-IDS is designed as a **working cybersecurity/ML prototype** rather than a production network sensor. It generates synthetic traffic and attack scenarios, extracts behavioral features, scores anomalies with Isolation Forest, enriches alerts with an optional local LLM, and presents the results through a Rich-based terminal interface.
+AI-IDS is a **research/learning prototype**, not a production network sensor. Choose the simulator for repeatable demonstrations, the separate evaluation module for labeled benchmark metrics, or passive Scapy capture to inspect metadata from an authorized local interface. All three workflows are intentionally distinct.
 
 ---
 
@@ -107,7 +107,9 @@ The project includes a terminal-based monitoring interface showing packet counts
 - `dashboard.py` — Rich terminal interface.
 - `logger.py` — alert persistence and statistics.
 - `report.py` — post-session report generation.
-- `main.py` — application entry point and CLI.
+- `main.py` — application entry point and CLI; selects simulator or passive capture mode.
+- `live_capture.py` — Scapy adapter that extracts packet metadata and payload entropy without retaining payload contents.
+- `evaluation/` — isolated UNSW-NB15 benchmark pipeline; it does not feed results into the live detector.
 
 ---
 
@@ -229,11 +231,39 @@ If Ollama is installed and configured with a compatible model, AI-IDS can use it
 
 ## ▶️ Usage
 
-### Live monitoring
+### 1. Synthetic simulator (default)
+
+This is the original repeatable demo. It generates normal-like records and synthetic attack records; it does **not** sniff your network.
 
 ```bash
-python main.py
+python main.py --mode simulator
+python main.py --mode simulator --demo
+python main.py --mode simulator --attack port_scan
 ```
+
+### 2. Passive live packet capture
+
+Install Scapy (included in `requirements.txt`) and, on Windows, install Npcap. Then list/select a capture interface using your OS/Scapy interface tools and run:
+
+```bash
+python main.py --mode live --interface "Wi-Fi"
+```
+
+Linux example (use the interface name from `ip link`):
+
+```bash
+sudo python main.py --mode live --interface eth0
+```
+
+An optional BPF filter can narrow capture, for example:
+
+```bash
+python main.py --mode live --interface "Wi-Fi" --bpf-filter "tcp or udp"
+```
+
+Live mode is **passive**: it does not inject, block, or modify packets. It extracts IPv4 TCP/UDP metadata and calculates payload entropy in memory; it does not persist or send raw payload bytes to the LLM. Capture only traffic on networks/interfaces you are authorized to monitor. Stop with Ctrl+C.
+
+**Important live-mode limitation:** the current Isolation Forest is still initialized with a synthetic normal-only baseline. Real packets will be scored against that demonstration baseline, so alerts are exploratory and may be noisy. This is not calibrated detection and must not be used for operational blocking or incident response. The Scapy adapter also maintains lightweight per-5-tuple counters for features; it is not yet a validated bidirectional flow engine.
 
 ### Demonstration mode
 
@@ -252,13 +282,17 @@ python main.py --attack c2_beacon
 python main.py --attack null_scan
 ```
 
-### Control simulation speed
+### Control simulator speed
 
 ```bash
-python main.py --speed 10
+python main.py --mode simulator --speed 10
 ```
 
-Press **Ctrl+C** to stop the session and generate the configured output files.
+### 3. Independent benchmark evaluation
+
+The UNSW-NB15 evaluation is a separate offline workflow. Follow [evaluation/README.md](evaluation/README.md); it uses the official labeled train/test files and does not alter the simulator or live-capture model. Do not report benchmark metrics until the run completes and its JSON output has been inspected.
+
+Press **Ctrl+C** to stop a simulator or live-capture session and generate the configured output files.
 
 ---
 
@@ -295,13 +329,14 @@ These files make it easier to inspect detections after a demonstration or experi
 
 ## ⚠️ Scope & Limitations
 
-This repository is a **research/academic prototype**. The current runtime uses simulated packet-like records, not passive capture from a production network. Features such as inter-arrival time, duration, and throughput are generated per record; the current detector does not aggregate packets into sessions or temporal flows.
+This repository is a **research/academic prototype**. Simulator mode uses synthetic records. Live mode passively captures IPv4 packet metadata through Scapy, but its model still uses a synthetic baseline and its per-tuple counters are not a validated flow detector. The benchmark mode is separate and evaluates on the official UNSW-NB15 labeled split.
 
 It does **not** provide guaranteed zero-day detection, production-grade incident response, calibrated confidence, or validated enterprise IDS performance. Dashboard response entries are proposed actions only; the application does not block IP addresses, isolate network segments, or modify firewall rules.
 
 Planned areas include:
 
-- real packet capture using Scapy/Wireshark integrations
+- calibrated live-mode training using trusted environment-specific normal traffic
+- bounded bidirectional flow aggregation and protocol-aware feature validation
 - SIEM integrations
 - transformer-based detection models
 - encrypted traffic analysis
@@ -329,3 +364,10 @@ The two repositories explore the same broader problem from different angles:
 
 ---
 
+
+
+## 🔬 UNSW-NB15 benchmark evaluation
+
+A separate, reproducible Isolation Forest benchmark pipeline is available under [`evaluation/`](evaluation/). It trains only on normal-labeled records from the official training split, reserves normal-only records for threshold calibration, and evaluates once on the official held-out test split. It reports ROC-AUC, precision, recall, F1, precision@K, confusion matrix, FPR/FNR, per-attack-category recall, dataset hashes, split sizes, and environment details. It does not alter the live simulator detector.
+
+See [`evaluation/README.md`](evaluation/README.md) for dataset acquisition and run instructions. No benchmark performance numbers are claimed until the real labeled dataset has been downloaded and the pipeline has completed successfully.
