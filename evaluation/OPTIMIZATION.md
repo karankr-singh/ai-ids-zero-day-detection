@@ -4,11 +4,10 @@ Run model comparison, threshold sensitivity, and feature permutation analysis
 using only the official **training partition**:
 
 ```powershell
-python -m evaluation.optimize_unsw_nb15 --train-csv datasets/unsw_nb15/UNSW_NB15_training-set.csv
+python -m evaluation.optimize_unsw_nb15 --download-data
 ```
 
-If the Zenodo filenames were reversed on download, pass the actual path returned
-as the training partition by `download_dataset()` (the larger 175,341-row file).
+The `--download-data` option reuses the checksum-verified downloader and automatically selects the corrected 175,341-row training partition even when Zenodo's filenames are reversed. To use an existing file instead, pass its verified training path with `--train-csv`.
 
 The experiment:
 - fits preprocessing and models on normal-labeled training rows only;
@@ -21,7 +20,7 @@ The experiment:
   validation rows;
 - never opens or reads the official test partition.
 
-Output: `results/unsw_nb15/optimization/unsw_nb15_optimization.json`.
+Default compute limits: 15,000 fit normals for Isolation Forest, at most 5,000 for LOF and One-Class SVM, and 12,000 validation rows. Output: `results/unsw_nb15/optimization/unsw_nb15_optimization.json`.
 
 After selecting and freezing a model and operating threshold, run the existing
 `evaluation.run_unsw_nb15` once on the official test partition. Do not use
