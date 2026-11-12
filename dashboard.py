@@ -108,21 +108,27 @@ class Dashboard:
         self._sev_counts[sev] = self._sev_counts.get(sev, 0) + 1
         proto = alert.get("protocol", "TCP")
         self._proto_counts[proto] = self._proto_counts.get(proto, 0) + 1
-        self._tick_anomaly += 1
+        self._record_traffic(anomaly=True)
 
         # Proposed-response log
         action_text = f"{alert.get('threat_type','?')} from {alert.get('src_ip','?')} — {alert.get('proposed_response','?')}"
         self._actions.appendleft((sev, action_text, alert.get("timestamp", "")))
         self._refresh()
 
-    def add_normal_tick(self, count: int = 1):
-        self._tick_normal += count
+    def _record_traffic(self, anomaly: bool, count: int = 1):
+        if anomaly:
+            self._tick_anomaly += count
+        else:
+            self._tick_normal += count
         now = time.time()
         if now - self._last_tick >= 1.0:
             self._traffic_normal.append(self._tick_normal)
             self._traffic_anomaly.append(self._tick_anomaly)
             self._tick_normal = self._tick_anomaly = 0
             self._last_tick = now
+
+    def add_normal_tick(self, count: int = 1):
+        self._record_traffic(anomaly=False, count=count)
 
     def log_system(self, msg: str, colour: str = "dim"):
         ts = time.strftime("%H:%M:%S")
@@ -182,8 +188,8 @@ class Dashboard:
         t.add_column(justify="right",  ratio=2)
         t.add_row(
             f"[bold bright_cyan]AI-IDS[/]  [grey50]Intrusion Detection System v1.0[/]",
-            f"[grey50]PACKETS[/]\n[bold bright_cyan]{s['packets']:,}[/]",
-            f"[grey50]ALERTS[/]\n[bold bright_red]{s['alerts']:,}[/]",
+            f"[grey50]PACKETS[/] [bold bright_cyan]{s['packets']:,}[/]",
+            f"[grey50]ALERTS[/] [bold bright_red]{s['alerts']:,}[/]",
             status_str,
         )
         return Panel(t, style="on grey7", border_style="bright_cyan", height=3)
@@ -214,7 +220,7 @@ class Dashboard:
         if not self._alerts:
             tbl.add_row("—", "—", "[grey50]No alerts yet[/]", "", "")
 
-        title = f"[bold bright_cyan]🔴 Live Alert Feed[/]  [grey50]{len(self._alerts)} total[/]"
+        title = f"[bold bright_cyan]🔴 Live Alert Feed[/]  [grey50]{self._stats['alerts']:,} total alerts · {len(self._alerts)} retained[/]"
         return Panel(tbl, title=title, border_style="grey23", padding=(0, 0))
 
     # ── Traffic sparklines ─────────────────────────────────────────
@@ -224,16 +230,17 @@ class Dashboard:
         anom  = list(self._traffic_anomaly)
 
         t = Text()
-        t.append("Normal   [bright_green]", style="grey50")
+        t.append("Normal   ", style="grey50")
         t.append(spark(norm, w), style="bright_green")
         t.append("\n")
-        t.append("Anomaly  [bright_red]",   style="grey50")
+        t.append("Anomaly  ", style="grey50")
         t.append(spark(anom, w), style="bright_red")
 
         total_n = sum(norm) or 1
         total_a = sum(anom)
         pct = total_a / (total_n + total_a) * 100 if (total_n + total_a) else 0
-        t.append(f"\n\n[grey50]Anomaly rate:[/] [bright_yellow]{pct:.1f}%[/]")
+        t.append("\n\nAnomaly rate: ", style="grey50")
+        t.append(f"{pct:.1f}%", style="bright_yellow")
 
         return Panel(t, title="[bold bright_cyan]📊 Traffic[/]",
                      border_style="grey23", padding=(1, 2))
