@@ -15,6 +15,14 @@ and [Zenodo record 3768048](https://zenodo.org/records/3768048).
 No manual browser download is required. Dataset files remain local and should
 not be committed to Git.
 
+The pinned Zenodo record currently serves the standard 175,341-row training
+partition under the `UNSW_NB15_testing-set.csv` filename and the standard
+82,332-row testing partition under the `UNSW_NB15_training-set.csv` filename.
+The downloader detects this by the published row and normal-record counts,
+then returns the partitions in their correct training/testing roles. It refuses
+to continue if the downloaded files do not match either recognized ordering.
+Do not infer split roles from these two Zenodo filenames alone.
+
 ## 2. Install dependencies
 
 From the repository root:
