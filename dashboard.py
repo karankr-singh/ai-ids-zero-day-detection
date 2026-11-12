@@ -174,11 +174,15 @@ class Dashboard:
     # Header
     def _render_header(self) -> Panel:
         stats = self._stats
-        online = bool(stats.get("monitoring"))
-        status = (
-            "[bright_green]● PASSIVE MONITORING[/]"
-            if online else "[grey50]○ STANDBY[/]"
-        )
+        phase = stats.get("phase", "standby")
+        mode = stats.get("mode", "MONITORING")
+        if phase == "learning":
+            status = "[bright_yellow]● LEARNING BASELINE[/]"
+        elif phase == "monitoring":
+            colour = "bright_green" if mode == "SIMULATOR DEMO" else "bright_cyan"
+            status = f"[{colour}]● {mode}[/]"
+        else:
+            status = "[grey50]○ STANDBY[/]"
 
         grid = Table.grid(expand=True, padding=(0, 2))
         grid.add_column(ratio=3)
