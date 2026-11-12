@@ -252,7 +252,7 @@ python main.py --mode simulator --attack port_scan
 Install Scapy (included in `requirements.txt`) and, on Windows, install Npcap. Then list/select a capture interface using your OS/Scapy interface tools and run:
 
 ```bash
-python main.py --mode live --interface "Wi-Fi" --learn-seconds 120
+python main.py --mode live --interface "Wi-Fi" --learn-seconds 30
 ```
 
 Linux example (use the interface name from `ip link`):
@@ -269,7 +269,7 @@ python main.py --mode live --interface "Wi-Fi" --bpf-filter "tcp or udp"
 
 Live mode is **passive**: it does not inject, block, or modify packets. It extracts IPv4 TCP/UDP metadata and calculates payload entropy in memory; it does not persist or send raw payload bytes to the LLM. Capture only traffic on networks/interfaces you are authorized to monitor. Stop with Ctrl+C.
 
-**Live learning workflow:** live mode starts with a fresh, untrained detector (no synthetic fallback). It passively collects packet metadata for the `--learn-seconds` quiet-window duration (default 120 seconds), requires at least `--min-training-samples` records (default 200), trains on 80% of that window, and calibrates the anomaly-score threshold on the held-out 20%. Keep the network as quiet and representative as possible during learning; avoid downloads, streaming, scans, and other unusual activity. The application cannot prove that this window is attack-free, and the calibration tail is not an independent false-positive-rate measurement. Live anomalies are therefore unclassified, low-priority candidates for review—not confirmed attacks. If the sample minimum is not met, live monitoring does not start and the app does not fall back to the synthetic model. The Scapy adapter maintains lightweight per-5-tuple counters; it is not yet a validated bidirectional flow engine.
+**Live learning workflow:** live mode starts with a fresh, untrained detector (no synthetic fallback). It passively collects packet metadata for the `--learn-seconds` quiet-window duration (default 30 seconds), requires at least `--min-training-samples` records (default 200), trains on 80% of that window, and calibrates the anomaly-score threshold on the held-out 20%. Keep the network as quiet and representative as possible during learning; avoid downloads, streaming, scans, and other unusual activity. The application cannot prove that this window is attack-free, and the calibration tail is not an independent false-positive-rate measurement. Live anomalies are therefore unclassified, low-priority candidates for review—not confirmed attacks. If the sample minimum is not met, live monitoring does not start and the app does not fall back to the synthetic model. The Scapy adapter maintains lightweight per-5-tuple counters; it is not yet a validated bidirectional flow engine.
 
 ### Demonstration mode
 
