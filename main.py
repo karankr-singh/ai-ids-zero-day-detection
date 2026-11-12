@@ -34,16 +34,13 @@ def _handle_record(pkt):
     result = detector.analyze(pkt)
     if result["is_anomaly"]:
         _alert_id += 1
-        analysis = llm.analyze(pkt, result)
+        analysis = llm.analyze(pkt, result) if pkt.get("source") != "live_capture" else (
+            "Unclassified statistical outlier against the learned local baseline. "
+            "This is a candidate for review, not a confirmed attack."
+        )
         alert = _build_alert(_alert_id, pkt, result, analysis)
         log.add(alert)
         dash.add_alert(alert)
-        if result["severity"] in ("CRITICAL", "HIGH"):
-            dash.log_system(
-                f"{result['severity']} | {result['threat_type']} | "
-                f"{pkt['src_ip']} → {pkt['dst_ip']} | {result['proposed_response']}",
-                "red" if result["severity"] == "CRITICAL" else "yellow",
-            )
     else:
         dash.add_normal_tick()
 
@@ -69,7 +66,6 @@ def simulator_loop(packets_per_second=5):
 
 
 def inject_attack(attack_key, count=15, delay=2.0):
-    global _alert_id
     time.sleep(delay)
     if not _running:
         return
@@ -99,8 +95,9 @@ def demo_mode(duration=45):
     threading.Thread(target=stop_demo, daemon=True).start()
 
 
-def live_capture_loop(interface=None, bpf_filter=None):
-    """Passively observe packets; never inject, modify, or block traffic."""
+def live_capture_loop(interface=None, bpf_filter=None,
+                      learn_seconds=120, min_training_samples=200):
+    """Learn from an operator-designated quiet window, then passively monitor."""
     try:
         from scapy.all import sniff
     except ImportError as exc:
@@ -110,12 +107,98 @@ def live_capture_loop(interface=None, bpf_filter=None):
 
     from live_capture import ScapyCapture
 
+    global detector
+    detector = AnomalyDetector(pretrain=False)
     adapter = ScapyCapture()
-    dash.log_system("Passive capture enabled; payload contents are not stored", "cyan")
+    learning_records = []
+
+    dash.log_system("PASSIVE LEARNING MODE — no anomaly alerts are generated", "cyan")
+    dash.log_system(
+        f"Keep this network quiet for {learn_seconds}s; avoid downloads, "
+        "streaming, scans, and other unusual activity.",
+        "yellow",
+    )
     dash.log_system(
         f"Interface: {interface or 'Scapy default'} | BPF: {bpf_filter or 'none'}",
         "cyan",
     )
+    dash.update_stats({
+        "training_status": "collecting operator-designated normal traffic",
+        "monitoring": False,
+    })
+
+    def collect_packet(packet):
+        if not _running:
+            return
+        try:
+            record = adapter.to_record(packet)
+            if record is not None:
+                learning_records.append(record)
+                if len(learning_records) % 50 == 0:
+                    dash.update_stats({
+                        "packets": len(learning_records),
+                        "training_status": (
+                            f"learning: {len(learning_records)} samples "
+                            f"/ {min_training_samples} minimum"
+                        ),
+                        "monitoring": False,
+                    })
+        except Exception as exc:
+            dash.log_system(f"Learning packet skipped: {type(exc).__name__}: {exc}", "yellow")
+
+    try:
+        sniff(
+            iface=interface,
+            filter=bpf_filter,
+            prn=collect_packet,
+            store=False,
+            timeout=learn_seconds,
+        )
+    except PermissionError as exc:
+        raise SystemExit(
+            "Packet capture permission denied. Run with appropriate local "
+            "capture privileges or configure Npcap on Windows."
+        ) from exc
+
+    if not _running:
+        return
+    if len(learning_records) < min_training_samples:
+        dash.log_system(
+            f"Learning stopped: captured {len(learning_records)} records; "
+            f"{min_training_samples} required. No live detector enabled.",
+            "red",
+        )
+        raise SystemExit(
+            f"Insufficient learning traffic ({len(learning_records)} records). "
+            f"Retry with a longer --learn-seconds value; no synthetic fallback was used."
+        )
+
+    try:
+        calibration = detector.fit_live_baseline(
+            learning_records, min_samples=min_training_samples
+        )
+    except (ValueError, FloatingPointError) as exc:
+        raise SystemExit(f"Could not calibrate live baseline: {exc}") from exc
+
+    # Do not retain the learning records after fitting.
+    sample_count = len(learning_records)
+    learning_records.clear()
+    dash.log_system(
+        f"Baseline ready: {calibration['training_samples']} fit samples, "
+        f"{calibration['calibration_samples']} held-out calibration samples.",
+        "green",
+    )
+    dash.log_system(
+        "Calibration tail is not an independent FPR measurement; "
+        "learning-window traffic is not verified attack-free.",
+        "yellow",
+    )
+    dash.update_stats({
+        "packets": 0,
+        "alerts": 0,
+        "training_status": detector.training_status,
+        "monitoring": True,
+    })
 
     def on_packet(packet):
         if not _running:
@@ -127,6 +210,11 @@ def live_capture_loop(interface=None, bpf_filter=None):
         except Exception as exc:
             dash.log_system(f"Packet skipped: {type(exc).__name__}: {exc}", "yellow")
 
+    dash.log_system(
+        f"Live monitoring enabled after {sample_count} learning records; "
+        "candidate alerts only.",
+        "cyan",
+    )
     try:
         sniff(
             iface=interface,
@@ -137,8 +225,7 @@ def live_capture_loop(interface=None, bpf_filter=None):
         )
     except PermissionError as exc:
         raise SystemExit(
-            "Packet capture permission denied. Run with appropriate local "
-            "capture privileges or configure Npcap on Windows."
+            "Packet capture permission denied. Check Npcap and capture privileges."
         ) from exc
 
 
@@ -152,6 +239,8 @@ def _build_alert(aid, pkt, result, analysis):
         "dst_port": pkt.get("dst_port", 0),
         "severity": result["severity"],
         "score": result["anomaly_score"],
+        "decision_threshold": result.get("decision_threshold"),
+        "baseline_mode": result.get("baseline_mode"),
         "threat_type": result["threat_type"],
         "analysis": analysis,
         "proposed_response": result["proposed_response"],
@@ -200,21 +289,39 @@ def main():
                         help="Simulator records per second (default: 5)")
     parser.add_argument("--interface", help="Capture interface name for --mode live")
     parser.add_argument("--bpf-filter", help="Optional Scapy/BPF capture filter")
+    parser.add_argument(
+        "--learn-seconds", type=int, default=120,
+        help="Live-mode quiet baseline collection window in seconds (default: 120)",
+    )
+    parser.add_argument(
+        "--min-training-samples", type=int, default=200,
+        help="Minimum captured records required before live monitoring (default: 200)",
+    )
 
     args = parser.parse_args()
     if args.speed < 1:
         parser.error("--speed must be at least 1")
+    if args.learn_seconds < 1:
+        parser.error("--learn-seconds must be at least 1")
+    if args.min_training_samples < 100:
+        parser.error("--min-training-samples must be at least 100")
     if args.mode == "live" and (args.demo or args.attack):
         parser.error("--demo and --attack are simulator-only; use --mode simulator")
 
     dash = Dashboard()
     dash.log_system(f"LLM backend: {llm.backend}", "cyan")
     dash.log_system(f"Mode: {'PASSIVE LIVE CAPTURE' if args.mode == 'live' else 'SIMULATOR'}", "cyan")
-    dash.log_system(
-        "Warning: live mode uses the prototype synthetic baseline; detections "
-        "are exploratory, not calibrated or benchmark-validated.",
-        "yellow",
-    )
+
+    if args.mode == "simulator":
+        dash.log_system(
+            "Simulator uses synthetic baseline and labels; not live-network validation.",
+            "yellow",
+        )
+    else:
+        dash.log_system(
+            "Live mode starts with a fresh baseline; synthetic fallback is disabled.",
+            "yellow",
+        )
 
     if args.mode == "simulator" and args.demo:
         demo_mode()
@@ -225,7 +332,11 @@ def main():
 
     try:
         if args.mode == "live":
-            live_capture_loop(args.interface, args.bpf_filter)
+            live_capture_loop(
+                args.interface, args.bpf_filter,
+                learn_seconds=args.learn_seconds,
+                min_training_samples=args.min_training_samples,
+            )
         else:
             simulator_loop(packets_per_second=args.speed)
     except KeyboardInterrupt:
