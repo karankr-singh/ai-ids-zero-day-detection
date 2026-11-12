@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 from evaluation.run_unseen_attacks import evaluate_unseen_categories
@@ -14,6 +15,12 @@ def test_firewall_target_accepts_public_ipv4():
     assert validate_block_target("8.8.8.8") == "8.8.8.8"
 
 
+def test_firewall_target_rejects_ipv6_and_cidr():
+    for address in ("2001:4860:4860::8888", "8.8.8.8/32"):
+        with pytest.raises(ValueError):
+            validate_block_target(address)
+
+
 def test_windows_firewall_plan_is_explicit_inbound_and_outbound():
     commands = firewall_commands("8.8.8.8", system="Windows")
     assert len(commands) == 2
@@ -23,12 +30,55 @@ def test_windows_firewall_plan_is_explicit_inbound_and_outbound():
 
 def test_linux_firewall_plan_is_host_scoped():
     commands = firewall_commands("1.1.1.1", system="Linux")
-    assert commands[0][1] == "INPUT"
-    assert commands[1][1] == "OUTPUT"
+    assert len(commands) == 2
+    assert commands[0][1:3] == ["-I", "INPUT"]
+    assert commands[1][1:3] == ["-I", "OUTPUT"]
     assert "DROP" in commands[0]
 
 
-def test_unseen_evaluation_requires_category_column(tmp_path):
-    # Function-level validation is covered by the production loader; this
-    # lightweight check keeps the CLI module importable and exposes its API.
-    assert callable(evaluate_unseen_categories)
+def test_unseen_evaluation_uses_only_normal_training_rows(tmp_path):
+    train_rows = []
+    for i in range(100):
+        train_rows.append({
+            "id": i, "dur": 0.1 + (i % 7) * 0.01,
+            "proto": "tcp" if i % 2 else "udp", "service": "http",
+            "attack_cat": "Normal", "label": 0,
+        })
+    for i in range(20):
+        train_rows.append({
+            "id": 100 + i, "dur": 2.0 + i,
+            "proto": "icmp", "service": "-", "attack_cat": "Fuzzers",
+            "label": 1,
+        })
+
+    test_rows = []
+    for i in range(30):
+        test_rows.append({
+            "id": 200 + i, "dur": 0.1 + (i % 5) * 0.01,
+            "proto": "tcp" if i % 2 else "udp", "service": "http",
+            "attack_cat": "Normal", "label": 0,
+        })
+    for category, base in (("Worms", 3.0), ("Shellcode", 5.0)):
+        for i in range(12):
+            test_rows.append({
+                "id": 300 + len(test_rows), "dur": base + i * 0.1,
+                "proto": "icmp", "service": "-", "attack_cat": category,
+                "label": 1,
+            })
+
+    train_path = tmp_path / "train.csv"
+    test_path = tmp_path / "test.csv"
+    pd.DataFrame(train_rows).to_csv(train_path, index=False)
+    pd.DataFrame(test_rows).to_csv(test_path, index=False)
+
+    report = evaluate_unseen_categories(
+        train_path, test_path, tmp_path / "results",
+        categories=["Worms", "Shellcode"], estimators=10,
+        validation_fraction=0.2, target_fpr=0.05,
+    )
+    assert report["training"]["attack_training_rows_excluded"] == 20
+    assert report["training"]["fit_normal_rows"] + report["training"]["calibration_normal_rows"] == 100
+    assert report["holdout"]["test_selected_attack_records"] == 24
+    assert report["holdout"]["test_excluded_attack_records"] == 0
+    assert set(report["per_unseen_attack_category"]) == {"Worms", "Shellcode"}
+    assert (tmp_path / "results" / "unsw_nb15_unseen_categories.json").is_file()
