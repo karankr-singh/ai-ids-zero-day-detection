@@ -135,7 +135,7 @@ def live_capture_loop(interface=None, bpf_filter=None,
             if record is not None:
                 if len(learning_records) < 10000:
                     learning_records.append(record)
-                if len(learning_records) % 50 == 0:
+                if 0 < len(learning_records) < 10000 and len(learning_records) % 50 == 0:
                     dash.update_stats({
                         "packets": len(learning_records),
                         "training_status": (
