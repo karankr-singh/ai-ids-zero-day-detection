@@ -169,11 +169,13 @@ These are **synthetic scenarios for experimentation and demonstration**, not evi
 
 ##  Evaluation status
 
-The live Isolation Forest pipeline has **not yet been evaluated on an independent, labeled benchmark dataset**. The dashboard and session reports therefore do not display accuracy, false-positive rate, or confidence percentages. The detector reports anomaly scores and decisions only.
+**Live detector:** The live Isolation Forest pipeline has **not yet been evaluated on an independent, labeled benchmark dataset**. The dashboard and live session reports therefore do not claim accuracy, F1, or false-positive rate.
 
-Earlier synthetic comparison charts and confusion matrices have been removed from the primary project README because they do not evaluate the live Isolation Forest pipeline on independent data. They may be restored in a clearly separated research appendix only if their dataset generation, split, labels, and exact evaluated model are documented and reproducible.
+**Benchmark harness:** A separate, reproducible UNSW-NB15 evaluation pipeline is available in [`evaluation/`](evaluation/README.md). It is designed to train and calibrate in the offline benchmark workflow and evaluate against the official labeled test split. **Benchmark results have not yet been produced and reviewed**, so no performance metrics are claimed here. The benchmark harness does not train or validate the live detector.
 
-> **Important:** Synthetic demonstrations are useful for exercising software paths, but do not establish generalization to real network traffic.
+Earlier synthetic comparison charts and confusion matrices remain excluded because they do not independently evaluate the live pipeline.
+
+> **Important:** Synthetic demonstrations exercise the software workflow; they do not establish generalization to real network traffic.
 
 ---
 
@@ -314,12 +316,25 @@ ai-ids-zero-day-detection/
 ├── main.py
 ├── detector.py
 ├── simulator.py
+├── live_capture.py
 ├── llm_engine.py
 ├── logger.py
 ├── dashboard.py
 ├── report.py
 ├── requirements.txt
-└── logs/                 # generated runtime output
+├── pyproject.toml
+├── index.html             # project website
+├── VIDEO_DEMO.md          # recording guide and narration
+├── evaluation/
+│   ├── README.md
+│   ├── run_unsw_nb15.py
+│   └── __init__.py
+├── tests/
+│   ├── test_detector.py
+│   ├── test_live_baseline.py
+│   ├── test_dashboard_scenario.py
+│   └── test_evaluation.py
+└── logs/                  # generated runtime output (git-ignored)
 ```
 
 ---
@@ -340,7 +355,7 @@ These files make it easier to inspect detections after a demonstration or experi
 
 ##  Scope & Limitations
 
-This repository is a **research/academic prototype**. Simulator mode uses synthetic records. Live mode passively captures IPv4 packet metadata through Scapy, but its model still uses a synthetic baseline and its per-tuple counters are not a validated flow detector. The benchmark mode is separate and evaluates on the official UNSW-NB15 labeled split.
+This repository is a **research/academic prototype**. Simulator mode uses synthetic records. Live mode passively captures IPv4 packet metadata through Scapy and starts with a fresh, untrained detector: it learns from an operator-designated quiet window and calibrates a threshold on a held-out portion of that same window; it does **not** use a synthetic baseline or fallback. The learning window is not independently verified as attack-free, and the per-tuple counters are not a validated bidirectional flow detector. A separate UNSW-NB15 benchmark harness is available under `evaluation/`, but benchmark results have not yet been produced and reviewed.
 
 It does **not** provide guaranteed zero-day detection, production-grade incident response, calibrated confidence, or validated enterprise IDS performance. Dashboard response entries are proposed actions only; the application does not block IP addresses, isolate network segments, or modify firewall rules.
 
