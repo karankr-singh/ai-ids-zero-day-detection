@@ -77,3 +77,34 @@ A 5% target FPR is a calibration setting, not a promise that the official test
 FPR will be 5%. The observed test FPR must be reported as measured. Results
 describe this model and this dataset split only; they do not establish
 production-network or universal zero-day detection capability.
+
+
+## 7. Held-out attack-category experiment
+
+Run a second experiment that reports detection separately for attack categories
+selected from the official test split:
+
+```bash
+python -m evaluation.run_unseen_attacks --download-data
+```
+
+By default, every attack category present in the official test split is
+evaluated. To select a subset, pass a comma-separated list:
+
+```bash
+python -m evaluation.run_unseen_attacks --download-data --categories Worms,Shellcode
+```
+
+This is a strict normal-only anomaly-detection protocol: every attack-labeled
+row in the official training file is excluded from both fitting and threshold
+calibration. Only normal training rows are split into fit and calibration
+subsets. The `attack_cat` field is used solely to select and report test
+categories; it is removed from the feature matrix. The official test file is
+never used to fit the model or select the threshold.
+
+The output `results/unsw_nb15/unsw_nb15_unseen_categories.json` includes
+category-specific attack counts, detections, misses, recall, the normal-test
+false-positive rate, split sizes, and source-file hashes. Always report the
+category sample counts. A small category may produce an unstable recall
+estimate, and this offline benchmark does not prove detection of arbitrary
+real-world zero-day attacks.
