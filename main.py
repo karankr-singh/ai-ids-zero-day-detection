@@ -306,7 +306,7 @@ def main():
     parser.add_argument("--bpf-filter", help="Optional Scapy/BPF capture filter")
     parser.add_argument(
         "--learn-seconds", type=int, default=30,
-        help="Live-mode quiet baseline collection window in seconds (default: 120)",
+        help="Live-mode quiet baseline collection window in seconds (default: 30)",
     )
     parser.add_argument(
         "--min-training-samples", type=int, default=200,
