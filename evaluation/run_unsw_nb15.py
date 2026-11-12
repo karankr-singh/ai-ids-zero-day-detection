@@ -10,6 +10,7 @@ import hashlib
 import json
 import platform
 import sys
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -36,6 +37,50 @@ LABEL_COLUMN = "label"
 CATEGORY_COLUMN = "attack_cat"
 DROP_COLUMNS = {"id", "attack_cat", "label"}
 DEFAULT_SEED = 42
+
+ZENODO_FILES = {
+    "UNSW_NB15_training-set.csv": "b5a3168217dee84d94574e697130c8aa",
+    "UNSW_NB15_testing-set.csv": "07a1566e74e89f4c970fd1dc3b5d554b",
+}
+
+def _md5(path: Path) -> str:
+    digest = hashlib.md5()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+def download_dataset(data_dir: Path, force: bool = False) -> tuple[Path, Path]:
+    """Download the pinned UNSW-NB15 CSV split files and verify their checksums."""
+    data_dir.mkdir(parents=True, exist_ok=True)
+    paths = {}
+    for filename, expected in ZENODO_FILES.items():
+        target = data_dir / filename
+        if target.exists() and not force and _md5(target) == expected:
+            print(f"Using verified cached file: {target}")
+            paths[filename] = target
+            continue
+        url = f"https://zenodo.org/records/3768048/files/{filename}?download=1"
+        temp = target.with_suffix(target.suffix + ".part")
+        request = urllib.request.Request(url, headers={"User-Agent": "AI-IDS-benchmark/1.0"})
+        print(f"Downloading {filename} from Zenodo...")
+        try:
+            with urllib.request.urlopen(request, timeout=90) as response, temp.open("wb") as output:
+                while True:
+                    chunk = response.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    output.write(chunk)
+            actual = _md5(temp)
+            if actual != expected:
+                raise ValueError(f"Checksum mismatch for {filename}: expected {expected}, got {actual}")
+            temp.replace(target)
+        except Exception:
+            temp.unlink(missing_ok=True)
+            raise
+        print(f"Downloaded and verified: {target}")
+        paths[filename] = target
+    return paths["UNSW_NB15_training-set.csv"], paths["UNSW_NB15_testing-set.csv"]
 
 
 def sha256_file(path: Path) -> str:
@@ -270,8 +315,11 @@ def evaluate(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-csv", type=Path, required=True)
-    parser.add_argument("--test-csv", type=Path, required=True)
+    parser.add_argument("--train-csv", type=Path)
+    parser.add_argument("--test-csv", type=Path)
+    parser.add_argument("--download-data", action="store_true", help="Download and verify UNSW-NB15 CSV files")
+    parser.add_argument("--data-dir", type=Path, default=Path("datasets/unsw_nb15"))
+    parser.add_argument("--force-download", action="store_true", help="Redownload even if cached files verify")
     parser.add_argument("--output-dir", type=Path, default=Path("results/unsw_nb15"))
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--validation-fraction", type=float, default=0.20)
@@ -283,8 +331,16 @@ def parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_args()
+    if args.download_data:
+        if args.train_csv or args.test_csv:
+            raise SystemExit("Use --download-data or explicit CSV paths, not both.")
+        train_csv, test_csv = download_dataset(args.data_dir, force=args.force_download)
+    else:
+        if not args.train_csv or not args.test_csv:
+            raise SystemExit("Provide --train-csv and --test-csv, or use --download-data.")
+        train_csv, test_csv = args.train_csv, args.test_csv
     evaluate(
-        args.train_csv, args.test_csv, args.output_dir,
+        train_csv, test_csv, args.output_dir,
         seed=args.seed,
         validation_fraction=args.validation_fraction,
         target_fpr=args.target_fpr,
