@@ -171,7 +171,9 @@ These are **synthetic scenarios for experimentation and demonstration**, not evi
 
 **Live detector:** The live Isolation Forest pipeline has **not yet been evaluated on an independent, labeled benchmark dataset**. The dashboard and live session reports therefore do not claim accuracy, F1, or false-positive rate.
 
-**Benchmark harness:** A separate, reproducible UNSW-NB15 evaluation pipeline is available in [`evaluation/`](evaluation/README.md). It can automatically download and checksum-verify the labeled UNSW-NB15 train/test CSVs, cache them locally, then train and calibrate in the offline benchmark workflow and evaluate against the official labeled test split. Run `python -m evaluation.run_unsw_nb15 --download-data`. **Benchmark results have not yet been produced and reviewed**, so no performance metrics are claimed here. The benchmark harness does not train or validate the live detector.
+**Benchmark harness:** The reproducible UNSW-NB15 pipeline downloads and checksum-verifies the official labeled train/test CSVs, trains on normal-only training records, calibrates on held-out normal training records, and evaluates the official test split. Run `python -m evaluation.run_unsw_nb15 --download-data`. A local benchmark run has completed; its measured metrics are written to `results/unsw_nb15/unsw_nb15_metrics.json` and should be reported with their recall/FPR limitations. The offline benchmark does not train or validate the live-capture model.
+
+**Unseen attack-category evaluation:** Run `python -m evaluation.run_unseen_attacks --download-data`. This fits and calibrates using normal-labeled training rows only, excludes every attack-labeled training row, and reports recall separately for attack categories selected from the official test split. By default it evaluates all attack categories present in that test split. The category labels are never model features. Output: `results/unsw_nb15/unsw_nb15_unseen_categories.json`.
 
 Earlier synthetic comparison charts and confusion matrices remain excluded because they do not independently evaluate the live pipeline.
 
@@ -270,7 +272,7 @@ An optional BPF filter can narrow capture, for example:
 python main.py --mode live --interface "Wi-Fi" --bpf-filter "tcp or udp"
 ```
 
-Live mode is **passive**: it does not inject, block, or modify packets. It extracts IPv4 TCP/UDP metadata and calculates payload entropy in memory; it does not persist or send raw payload bytes to the LLM. Capture only traffic on networks/interfaces you are authorized to monitor. Stop with Ctrl+C.
+Live mode is **passive**: it does not inject, block, or modify captured packets. It extracts IPv4 packet metadata and calculates payload entropy in memory; raw payload bytes are not persisted or sent to the LLM. Per-tuple counters are bounded and reset after an idle timeout. Capture only traffic on networks/interfaces you are authorized to monitor. Stop with Ctrl+C; capture polling uses a short timeout so shutdown remains responsive even on an idle interface.
 
 **Live learning workflow:** live mode starts with a fresh, untrained detector (no synthetic fallback). It passively collects packet metadata for the `--learn-seconds` quiet-window duration (default 30 seconds), requires at least `--min-training-samples` records (default 200), trains on 80% of that window, and calibrates the anomaly-score threshold on the held-out 20%. Keep the network as quiet and representative as possible during learning; avoid downloads, streaming, scans, and other unusual activity. The application cannot prove that this window is attack-free, and the calibration tail is not an independent false-positive-rate measurement. Live anomalies are therefore unclassified, low-priority candidates for review—not confirmed attacks. If the sample minimum is not met, live monitoring does not start and the app does not fall back to the synthetic model. The Scapy adapter maintains lightweight per-5-tuple counters; it is not yet a validated bidirectional flow engine.
 
@@ -301,9 +303,28 @@ python main.py --attack null_scan
 python main.py --mode simulator --speed 10
 ```
 
-### 3. Independent benchmark evaluation
+### 3. Independent benchmark and unseen-category evaluation
 
-The UNSW-NB15 evaluation is a separate offline workflow. Follow [evaluation/README.md](evaluation/README.md); it uses the official labeled train/test files and does not alter the simulator or live-capture model. Do not report benchmark metrics until the run completes and its JSON output has been inspected.
+The UNSW-NB15 workflows are separate offline experiments and do not alter the simulator or live-capture model.
+
+```bash
+python -m evaluation.run_unsw_nb15 --download-data
+python -m evaluation.run_unseen_attacks --download-data
+```
+
+The second command reports category-specific results for attack categories in the official test split that were never used for model fitting or threshold calibration. Inspect the JSON output and report per-category sample counts alongside recall; do not describe this dataset experiment as proof of universal zero-day detection.
+
+### 4. Guarded host firewall response (operator-triggered)
+
+The response helper supports a **manual, explicitly confirmed host firewall block** for one public IPv4 address on Windows or Linux. It is not triggered by anomaly scores, and it does not isolate network segments.
+
+Preview the commands without changing the firewall:
+
+```bash
+python -m response --block-ip 8.8.8.8
+```
+
+To request an actual block, add `--apply` and type the exact confirmation string when prompted. Windows requires an Administrator terminal; Linux requires root/sudo. Private, loopback, link-local, multicast, reserved, IPv6, and subnet targets are rejected. Use only on systems and traffic you are authorized to administer. Review and remove the corresponding firewall rules using your operating system's firewall tools when the block is no longer needed.
 
 Press **Ctrl+C** to stop a simulator or live-capture session and generate the configured output files.
 
@@ -317,6 +338,7 @@ ai-ids-zero-day-detection/
 ├── detector.py
 ├── simulator.py
 ├── live_capture.py
+├── response.py
 ├── llm_engine.py
 ├── logger.py
 ├── dashboard.py
@@ -328,6 +350,7 @@ ai-ids-zero-day-detection/
 ├── evaluation/
 │   ├── README.md
 │   ├── run_unsw_nb15.py
+│   ├── run_unseen_attacks.py
 │   └── __init__.py
 ├── tests/
 │   ├── test_detector.py
@@ -357,7 +380,7 @@ These files make it easier to inspect detections after a demonstration or experi
 
 This repository is a **research/academic prototype**. Simulator mode uses synthetic records. Live mode passively captures IPv4 packet metadata through Scapy and starts with a fresh, untrained detector: it learns from an operator-designated quiet window and calibrates a threshold on a held-out portion of that same window; it does **not** use a synthetic baseline or fallback. The learning window is not independently verified as attack-free, and the per-tuple counters are not a validated bidirectional flow detector. A separate UNSW-NB15 benchmark harness is available under `evaluation/`, but benchmark results have not yet been produced and reviewed.
 
-It does **not** provide guaranteed zero-day detection, production-grade incident response, calibrated confidence, or validated enterprise IDS performance. Dashboard response entries are proposed actions only; the application does not block IP addresses, isolate network segments, or modify firewall rules.
+It does **not** provide guaranteed zero-day detection, production-grade incident response, calibrated confidence, or validated enterprise IDS performance. The optional response helper can apply a manually approved host firewall block for a single public IPv4 address on Windows/Linux; it is not automatically invoked by anomaly alerts and does not isolate network segments. Live anomaly candidates remain advisory.
 
 Planned areas include:
 
@@ -368,7 +391,8 @@ Planned areas include:
 - encrypted traffic analysis
 - federated learning experiments
 - web-based monitoring
-- stronger automated response mechanisms
+- validated flow aggregation and protocol-aware live features
+- policy-managed, auditable response integrations and network-segment isolation
 - containerized deployment
 
 The project is intended for controlled experimentation and learning.
